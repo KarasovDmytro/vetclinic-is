@@ -1,0 +1,2892 @@
+openapi: 3.0.3
+
+info:
+  title: API інформаційної системи ветеринарної клініки
+  version: 1.0.0
+  description: |
+    REST API для обліку власників і пацієнтів, ведення медичних карток, керування розкладом прийомів
+    та обліку медикаментів ветеринарної клініки. Джерело вимог: `spec/srs.md` v1.0,
+    `spec/addendum-001-api-decisions.md`, `spec/addendum-002-api-contract-decisions.md`.
+
+    ## Загальні правила
+
+    - **Формат.** JSON (`application/json`), поля в camelCase, ідентифікатори UUID, час за ISO 8601 із зсувом
+      (відповіді повертаються в часовому поясі клініки `Europe/Kyiv`), дати без часу у форматі `YYYY-MM-DD`
+      (трактуються в часовому поясі клініки, межі діапазонів `from` і `to` включно).
+    - **Автентифікація.** Заголовок `Authorization: Bearer <token>`. Токен видається `POST /auth/login`
+      (дійсний 8 годин). Активність облікового запису перевіряється на кожному запиті.
+    - **Ролі.** `ADMIN` (адміністратор) і `VETERINARIAN` (лікар). Кожна операція вказує дозволені ролі
+      в розширенні `x-roles`. Роль перевіряється на кожному ендпоінті (REQ-F-004, REQ-NF-002).
+    - **Порядок перевірок.** 401, потім 403 (роль), потім 400/422, потім 404, потім 409. Винятки: 403
+      `NOT_ASSIGNED_DOCTOR` і `NOT_VISIT_AUTHOR` визначаються після завантаження об'єкта.
+    - **Пагінація колекцій.** Параметри `page` (≥ 1, за замовчуванням 1) і `pageSize` (1–100, за замовчуванням 20);
+      відповідь має вигляд `{items, page, pageSize, total}`. Сортування фіксоване для кожної колекції.
+    - **PATCH.** Передані поля змінюються, відсутні лишаються. Невідоме або незмінюване поле і порожнє тіло
+      дають 422. Значення `null` очищає необов'язкове поле.
+    - **Видалення.** Фізичного видалення сутностей предметної області немає: `DELETE` на будь-який ресурс
+      повертає 405 із заголовком `Allow` (REQ-F-016). Деактивація, архівація та скасування виконуються
+      зміною статусу.
+    - **Помилки.** Єдина модель `Error` (див. компоненти) для всіх відповідей 4xx і 5xx. Кожна відповідь
+      містить заголовок `X-Request-Id`, що збігається з `traceId` у тілі помилки; відповідь 405 містить
+      заголовок `Allow` зі списком дозволених методів; відповідь 401 містить `WWW-Authenticate: Bearer`.
+    - **Простежуваність.** Розширення `x-requirements` у кожній операції містить REQ-ID вимог SRS, які вона
+      реалізує. Наскрізні вимоги REQ-F-004 і REQ-NF-002 (перевірка ролі на кожному ендпоінті, 401/403)
+      діють для всіх операцій і наведені в `x-cross-cutting-requirements`.
+
+    ## Відповідність термінам предметної області
+
+    | Термін глосарію SRS §3 | У API |
+    |---|---|
+    | Власник (Owner) | ресурс `owners`, схема `Owner` |
+    | Пацієнт (Patient) | ресурс `patients`, схема `Patient` |
+    | Запис на прийом (Appointment) | ресурс `appointments`; статуси «Заплановано», «Завершено», «Скасовано» мають значення `SCHEDULED`, `COMPLETED`, `CANCELLED` |
+    | Прийом (Visit) | схема `Visit`, підресурс запису `appointments/{appointmentId}/visit` |
+    | Медична картка (Medical Record) | не окремий ресурс: хронологія прийомів `patients/{patientId}/visits` і статус пацієнта (`ACTIVE`, `ARCHIVED`, «Архівна картка») |
+    | Слот розкладу (Schedule Slot) | схема `Slot` у відповіді `doctors/{doctorId}/schedule` (`FREE`, `BOOKED`) |
+    | Конфлікт розкладу (Schedule Conflict) | відповідь 409 з кодом `SLOT_TAKEN` |
+    | Медикамент (Medication), Каталог медикаментів | ресурс `medications`, схема `Medication` |
+    | Залишок препарату (Medication Stock) | поле `quantity` медикамента, операція `adjust-stock` |
+    | Адміністратор (Administrator) | роль `ADMIN` |
+    | Лікар (Veterinarian) | роль `VETERINARIAN`; у шляхах і полях використано скорочення `doctor` (`/doctors`, `doctorId`) |
+    | Сповіщення про низький залишок (REQ-F-047, поза глосарієм) | ресурс `notifications`, тип `LOW_STOCK` |
+
+    ## Основні позитивні сценарії
+
+    Приклади запитів і відповідей для основних операцій наведено в полях `examples` (запити: `valid`,
+    відповіді: `success`) і пов'язані спільними даними: лікар Іваненко О.П., власниця Коваленко М.І.,
+    пацієнт Барсик, препарати Амоксицилін і Новокаїн. Наскрізний сценарій:
+    `login`, `createUser` (лікар), `createOwner`, `createPatient`, `getDoctorSchedule`, `createAppointment`,
+    `rescheduleAppointment` або `cancelAppointment`, `createVisit` (списання медикаментів, BDD §9.2),
+    `listPatientVisits`, `adjustMedicationStock`, `listNotifications`. Негативні сценарії описано
+    відповідями 4xx кожної операції (код і приклад на кожну помилку).
+  x-cross-cutting-requirements: [REQ-F-004, REQ-NF-002]
+
+servers:
+  - url: /api/v1
+    description: Базовий шлях API (хост задається середовищем розгортання)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+    description: Автентифікація
+  - name: Users
+    description: Облікові записи користувачів
+  - name: Owners
+    description: Власники тварин
+  - name: Patients
+    description: Пацієнти (тварини) та архівування карток
+  - name: Schedule
+    description: Сітка розкладу лікаря
+  - name: Appointments
+    description: Записи на прийом
+  - name: Visits
+    description: Прийоми та медична картка
+  - name: Medications
+    description: Каталог медикаментів і залишки
+  - name: Notifications
+    description: Сповіщення адміністратора про низький залишок
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Вхід у систему
+      description: |
+        Повертає bearer-токен. Невірні email або пароль дають 401 `INVALID_CREDENTIALS` (однаково для
+        невідомого email). Якщо пароль вірний, а обліковий запис деактивовано, повертається 403
+        `ACCOUNT_DEACTIVATED`. Вимоги: REQ-F-003, REQ-NF-001.
+      x-requirements: [REQ-F-003, REQ-NF-001]
+      x-roles: []
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              valid:
+                $ref: '#/components/examples/LoginRequestOk'
+      responses:
+        '200':
+          description: Успішний вхід
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  $ref: '#/components/examples/LoginResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users:
+    post:
+      tags: [Users]
+      operationId: createUser
+      summary: Створити обліковий запис
+      description: |
+        Створює користувача з роллю `ADMIN` або `VETERINARIAN`. Пароль задає адміністратор; у відповідях
+        пароль не повертається, а зберігається лише у захищеному вигляді (REQ-NF-001). Доступ: ADMIN.
+        Вимоги: REQ-F-001, REQ-F-005, REQ-NF-001.
+      x-requirements: [REQ-F-001, REQ-F-005, REQ-NF-001]
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            examples:
+              valid:
+                $ref: '#/components/examples/UserCreateRequestOk'
+      responses:
+        '201':
+          description: Обліковий запис створено
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                success:
+                  $ref: '#/components/examples/UserCreatedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Конфлікт стану. Код `EMAIL_TAKEN`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                emailTaken:
+                  $ref: '#/components/examples/EmailTakenError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Users]
+      operationId: listUsers
+      summary: Список облікових записів
+      description: "Сортування за `fullName`. Доступ: ADMIN. Вимоги: REQ-F-001, REQ-F-005."
+      x-requirements: [REQ-F-001, REQ-F-005]
+      x-roles: [ADMIN]
+      parameters:
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/Role'
+        - name: active
+          in: query
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Сторінка користувачів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/{userId}:
+    get:
+      tags: [Users]
+      operationId: getUser
+      summary: Отримати обліковий запис
+      description: "Доступ: ADMIN. Вимоги: REQ-F-001, REQ-F-005."
+      x-requirements: [REQ-F-001, REQ-F-005]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Користувач
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/{userId}/deactivate:
+    post:
+      tags: [Users]
+      operationId: deactivateUser
+      summary: Деактивувати обліковий запис
+      description: |
+        Необоротна зміна: `active` стає `false`, токени користувача перестають діяти одразу,
+        вхід заборонено. Фізичного видалення немає. Доступ: ADMIN. Вимоги: REQ-F-002, REQ-F-005.
+      x-requirements: [REQ-F-002, REQ-F-005]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Користувача деактивовано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Коди `LAST_ADMIN`, `USER_ALREADY_DEACTIVATED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                lastAdmin:
+                  $ref: '#/components/examples/LastAdminError'
+                userAlreadyDeactivated:
+                  $ref: '#/components/examples/UserAlreadyDeactivatedError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /doctors:
+    get:
+      tags: [Users]
+      operationId: listDoctors
+      summary: Довідник активних лікарів
+      description: |
+        Усі активні користувачі з роллю `VETERINARIAN` (без пагінації, сортування за `fullName`).
+        Окремий від адміністративного списку користувачів. Доступ: ADMIN, VETERINARIAN.
+        Вимоги: REQ-F-020, REQ-F-021.
+      x-requirements: [REQ-F-020, REQ-F-021]
+      x-roles: [ADMIN, VETERINARIAN]
+      responses:
+        '200':
+          description: Список лікарів
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Doctor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /owners:
+    post:
+      tags: [Owners]
+      operationId: createOwner
+      summary: Зареєструвати власника
+      description: "Доступ: ADMIN. Вимоги: REQ-F-010."
+      x-requirements: [REQ-F-010]
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerCreate'
+            examples:
+              valid:
+                $ref: '#/components/examples/OwnerCreateRequestOk'
+      responses:
+        '201':
+          description: Власника створено
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+              examples:
+                success:
+                  $ref: '#/components/examples/OwnerCreatedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Owners]
+      operationId: listOwners
+      summary: Пошук і список власників
+      description: |
+        Параметр `q` (2–100 символів) шукає підрядок у `fullName` без урахування регістру.
+        Сортування за `fullName`. Відповідь не повільніша за 3 с при 10 000 записів (REQ-NF-003).
+        Доступ: ADMIN, VETERINARIAN (лише читання). Вимоги: REQ-F-017, REQ-NF-003.
+      x-requirements: [REQ-F-017, REQ-NF-003]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Сторінка власників
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /owners/{ownerId}:
+    get:
+      tags: [Owners]
+      operationId: getOwner
+      summary: Отримати власника
+      description: "Доступ: ADMIN, VETERINARIAN. Вимоги: REQ-F-010."
+      x-requirements: [REQ-F-010]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/OwnerId'
+      responses:
+        '200':
+          description: Власник
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Owners]
+      operationId: updateOwner
+      summary: Редагувати власника
+      description: "Доступ: ADMIN. Вимоги: REQ-F-011."
+      x-requirements: [REQ-F-011]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/OwnerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerUpdate'
+      responses:
+        '200':
+          description: Власника оновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /patients:
+    post:
+      tags: [Patients]
+      operationId: createPatient
+      summary: Зареєструвати пацієнта
+      description: |
+        Пацієнт прив'язується до рівно одного існуючого власника через `ownerId`; зміна власника
+        після створення не передбачена. Початковий статус `ACTIVE` задає сервер.
+        Доступ: ADMIN. Вимоги: REQ-F-012, REQ-F-014.
+      x-requirements: [REQ-F-012, REQ-F-014]
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCreate'
+            examples:
+              valid:
+                $ref: '#/components/examples/PatientCreateRequestOk'
+      responses:
+        '201':
+          description: Пацієнта створено
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+              examples:
+                success:
+                  $ref: '#/components/examples/PatientCreatedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Patients]
+      operationId: listPatients
+      summary: Пошук і список пацієнтів
+      description: |
+        Параметр `q` (2–100 символів) шукає підрядок у `name` пацієнта без урахування регістру.
+        Сортування за `name`. Відповідь не повільніша за 3 с при 10 000 пацієнтів (REQ-NF-003).
+        Доступ: ADMIN, VETERINARIAN (лише читання). Вимоги: REQ-F-017, REQ-NF-003.
+      x-requirements: [REQ-F-017, REQ-NF-003]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/SearchQuery'
+        - name: ownerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PatientStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Сторінка пацієнтів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /patients/{patientId}:
+    get:
+      tags: [Patients]
+      operationId: getPatient
+      summary: Отримати пацієнта
+      description: |
+        Містить `status` (`ACTIVE`/`ARCHIVED`) картки. Не містить діагнозів чи призначень.
+        Метод `DELETE` на цей ресурс повертає 405 (REQ-F-016). Доступ: ADMIN, VETERINARIAN.
+        Вимоги: REQ-F-012, REQ-F-016.
+      x-requirements: [REQ-F-012, REQ-F-016]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      responses:
+        '200':
+          description: Пацієнт
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Patients]
+      operationId: updatePatient
+      summary: Редагувати базові дані пацієнта
+      description: |
+        Поля `ownerId` і `status` змінити не можна: передача дає 422 `IMMUTABLE_FIELD`
+        (REQ-F-014). Статус змінюється лише через `archive`. Доступ: ADMIN.
+        Вимоги: REQ-F-013, REQ-F-014.
+      x-requirements: [REQ-F-013, REQ-F-014]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientUpdate'
+      responses:
+        '200':
+          description: Пацієнта оновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /patients/{patientId}/archive:
+    post:
+      tags: [Patients]
+      operationId: archivePatient
+      summary: Перевести картку пацієнта в статус «Архівна»
+      description: |
+        Необоротна зміна: `status` стає `ARCHIVED`, картка зберігається й доступна лікарям лише
+        для перегляду. Розархівування немає. Операція відхиляється (409
+        `PATIENT_HAS_SCHEDULED_APPOINTMENTS`), поки є записи зі статусом `SCHEDULED`. Це єдиний спосіб
+        вивести картку з обігу, оскільки фізичне видалення заборонене (REQ-F-016).
+        Доступ: ADMIN. Вимоги: REQ-F-015, REQ-F-016.
+      x-requirements: [REQ-F-015, REQ-F-016]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      responses:
+        '200':
+          description: Картку архівовано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Коди `PATIENT_ARCHIVED`, `PATIENT_HAS_SCHEDULED_APPOINTMENTS`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                patientArchived:
+                  $ref: '#/components/examples/PatientArchivedError'
+                patientHasScheduledAppointments:
+                  $ref: '#/components/examples/PatientHasScheduledAppointmentsError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /patients/{patientId}/visits:
+    get:
+      tags: [Visits]
+      operationId: listPatientVisits
+      summary: Хронологія прийомів пацієнта (медична картка)
+      description: |
+        Сортування за `visitDate` за спаданням. Працює й для архівних карток (лише перегляд).
+        Адміністратор отримує 403 незалежно від статусу картки. Доступ: VETERINARIAN.
+        Вимоги: REQ-F-030, REQ-F-031, REQ-F-034, REQ-F-035.
+      x-requirements: [REQ-F-030, REQ-F-031, REQ-F-034, REQ-F-035]
+      x-roles: [VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Сторінка прийомів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitPage'
+              examples:
+                success:
+                  $ref: '#/components/examples/PatientVisitsResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /doctors/{doctorId}/schedule:
+    get:
+      tags: [Schedule]
+      operationId: getDoctorSchedule
+      summary: Сітка розкладу лікаря
+      description: |
+        Повертає всі слоти по 30 хвилин у межах робочих годин (09:00–18:00) за діапазон дат
+        `from`…`to` включно (не більше 7 днів), вільні й зайняті. Слот зайнятий, якщо на нього є запис
+        зі статусом `SCHEDULED` або `COMPLETED`; скасований запис слот звільняє. Тижневий розклад
+        повертається не повільніше за 2 с (REQ-NF-004). Лікар має лише перегляд.
+        Доступ: ADMIN, VETERINARIAN. Вимоги: REQ-F-020, REQ-F-026, REQ-NF-004.
+      x-requirements: [REQ-F-020, REQ-F-026, REQ-NF-004]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/DoctorId'
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Розклад лікаря
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+              examples:
+                success:
+                  $ref: '#/components/examples/ScheduleResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments:
+    post:
+      tags: [Appointments]
+      operationId: createAppointment
+      summary: Створити запис на прийом
+      description: |
+        Статус `SCHEDULED` призначає сервер. Якщо слот лікаря вже зайнятий, повертається 409
+        `SLOT_TAKEN`, і другий запис не зберігається. Для архівного пацієнта повертається 409
+        `PATIENT_ARCHIVED`. Той самий слот для іншого лікаря створюється без конфлікту.
+        Доступ: ADMIN. Вимоги: REQ-F-021, REQ-F-022, REQ-F-023.
+      x-requirements: [REQ-F-021, REQ-F-022, REQ-F-023]
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentCreate'
+            examples:
+              valid:
+                $ref: '#/components/examples/AppointmentCreateRequestOk'
+      responses:
+        '201':
+          description: Запис створено зі статусом `SCHEDULED`
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+              examples:
+                success:
+                  $ref: '#/components/examples/AppointmentCreatedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Конфлікт стану. Коди `SLOT_TAKEN`, `PATIENT_ARCHIVED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                slotTaken:
+                  $ref: '#/components/examples/SlotTakenError'
+                patientArchived:
+                  $ref: '#/components/examples/PatientArchivedError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Appointments]
+      operationId: listAppointments
+      summary: Список записів на прийом
+      description: |
+        Сортування за `startsAt` за зростанням. Фільтри `from`/`to` задають діапазон дат початку
+        записів включно. Доступ: ADMIN, VETERINARIAN (лише перегляд).
+        Вимоги: REQ-F-020, REQ-F-026.
+      x-requirements: [REQ-F-020, REQ-F-026]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - name: doctorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: patientId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/AppointmentStatus'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Сторінка записів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentPage'
+              examples:
+                success:
+                  $ref: '#/components/examples/AppointmentPageOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments/{appointmentId}:
+    get:
+      tags: [Appointments]
+      operationId: getAppointment
+      summary: Отримати запис на прийом
+      description: "Доступ: ADMIN, VETERINARIAN. Вимоги: REQ-F-021."
+      x-requirements: [REQ-F-021]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/AppointmentId'
+      responses:
+        '200':
+          description: Запис
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+              examples:
+                success:
+                  $ref: '#/components/examples/AppointmentCreatedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Appointments]
+      operationId: rescheduleAppointment
+      summary: Перенести запис на інший слот
+      description: |
+        Змінюється лише `startsAt` у межах того самого лікаря; `id`, лікар, пацієнт і статус `SCHEDULED`
+        лишаються тими самими, старий слот одразу звільняється. Перенесення можливе лише для запису
+        зі статусом `SCHEDULED` (409 `APPOINTMENT_NOT_SCHEDULED`). Якщо новий слот зайнятий, повертається
+        409 `SLOT_TAKEN`, і запис лишається на старому слоті. Якщо лікаря запису деактивовано, перенесення
+        відхиляється (422 `DOCTOR_NOT_AVAILABLE`): такий запис можна лише скасувати. Доступ: ADMIN.
+        Вимоги: REQ-F-023, REQ-F-024, REQ-F-026.
+      x-requirements: [REQ-F-023, REQ-F-024, REQ-F-026]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/AppointmentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentUpdate'
+            examples:
+              valid:
+                $ref: '#/components/examples/AppointmentRescheduleRequestOk'
+      responses:
+        '200':
+          description: Запис перенесено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+              examples:
+                success:
+                  $ref: '#/components/examples/AppointmentRescheduledResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Коди `SLOT_TAKEN`, `APPOINTMENT_NOT_SCHEDULED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                slotTaken:
+                  $ref: '#/components/examples/SlotTakenError'
+                appointmentNotScheduled:
+                  $ref: '#/components/examples/AppointmentNotScheduledError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments/{appointmentId}/cancel:
+    post:
+      tags: [Appointments]
+      operationId: cancelAppointment
+      summary: Скасувати запис на прийом
+      description: |
+        Необоротна зміна: статус стає `CANCELLED`, слот одразу вільний для нових записів. Запис не
+        видаляється. Скасувати можна лише запис зі статусом `SCHEDULED` (409
+        `APPOINTMENT_NOT_SCHEDULED`). Запис деактивованого лікаря скасувати можна. Доступ: ADMIN.
+        Вимоги: REQ-F-025, REQ-F-026.
+      x-requirements: [REQ-F-025, REQ-F-026]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/AppointmentId'
+      responses:
+        '200':
+          description: Запис скасовано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+              examples:
+                success:
+                  $ref: '#/components/examples/AppointmentCancelledResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Код `APPOINTMENT_NOT_SCHEDULED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                appointmentNotScheduled:
+                  $ref: '#/components/examples/AppointmentNotScheduledError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments/{appointmentId}/visit:
+    post:
+      tags: [Visits]
+      operationId: createVisit
+      summary: Зберегти результати прийому
+      description: |
+        Єдина атомарна транзакція (REQ-NF-005): створює прийом, ставить запису статус `COMPLETED`,
+        зменшує залишки вказаних медикаментів і, якщо залишок став нижчим за поріг, створює
+        сповіщення для адміністратора. Якщо кількість будь-якого препарату перевищує залишок,
+        повертається 409 `INSUFFICIENT_STOCK` (у `details` кожен проблемний препарат), і не
+        змінюється нічого: ні прийом, ні статус запису, ні залишки. Прийом може зберегти лише
+        лікар, якому призначено запис, і лише для запису зі статусом `SCHEDULED` та неархівної
+        картки. Доступ: VETERINARIAN. Вимоги: REQ-F-027, REQ-F-031, REQ-F-032, REQ-F-033,
+        REQ-F-035, REQ-F-044, REQ-F-045, REQ-F-046, REQ-F-047, REQ-F-048, REQ-NF-005.
+      x-requirements: [REQ-F-027, REQ-F-031, REQ-F-032, REQ-F-033, REQ-F-035, REQ-F-044, REQ-F-045, REQ-F-046, REQ-F-047, REQ-F-048, REQ-NF-005]
+      x-roles: [VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/AppointmentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitCreate'
+            examples:
+              valid:
+                $ref: '#/components/examples/VisitCreateRequestOk'
+      responses:
+        '201':
+          description: Прийом збережено, запис має статус `COMPLETED`
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+              examples:
+                success:
+                  $ref: '#/components/examples/VisitCreatedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостатньо прав. Коди `FORBIDDEN` (роль адміністратора), `NOT_ASSIGNED_DOCTOR`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  $ref: '#/components/examples/ForbiddenError'
+                notAssignedDoctor:
+                  $ref: '#/components/examples/NotAssignedDoctorError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Коди `APPOINTMENT_NOT_SCHEDULED`, `PATIENT_ARCHIVED`, `INSUFFICIENT_STOCK`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                appointmentNotScheduled:
+                  $ref: '#/components/examples/AppointmentNotScheduledError'
+                patientArchived:
+                  $ref: '#/components/examples/PatientArchivedError'
+                insufficientStock:
+                  $ref: '#/components/examples/InsufficientStockError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /visits/{visitId}:
+    get:
+      tags: [Visits]
+      operationId: getVisit
+      summary: Отримати прийом
+      description: |
+        Лікар має доступ до прийомів будь-якого пацієнта клініки. Адміністратор отримує 403.
+        Доступ: VETERINARIAN. Вимоги: REQ-F-030, REQ-F-031, REQ-F-033, REQ-F-034.
+      x-requirements: [REQ-F-030, REQ-F-031, REQ-F-033, REQ-F-034]
+      x-roles: [VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/VisitId'
+      responses:
+        '200':
+          description: Прийом
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Visits]
+      operationId: updateVisit
+      summary: Редагувати результати прийому
+      description: |
+        Редагувати може лише автор прийому і лише поки картка не архівна (409 `PATIENT_ARCHIVED`).
+        Змінюються `diagnosis`, `prescriptions`, `notes`. Перелік медикаментів після збереження
+        незмінний: поле `medications` дає 422 `IMMUTABLE_FIELD`, повторного списання немає.
+        Доступ: VETERINARIAN. Вимоги: REQ-F-031, REQ-F-032, REQ-F-035.
+      x-requirements: [REQ-F-031, REQ-F-032, REQ-F-035]
+      x-roles: [VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/VisitId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisitUpdate'
+      responses:
+        '200':
+          description: Прийом оновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Недостатньо прав. Коди `FORBIDDEN` (роль адміністратора), `NOT_VISIT_AUTHOR`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  $ref: '#/components/examples/ForbiddenError'
+                notVisitAuthor:
+                  $ref: '#/components/examples/NotVisitAuthorError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Код `PATIENT_ARCHIVED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                patientArchived:
+                  $ref: '#/components/examples/PatientArchivedError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /medications:
+    post:
+      tags: [Medications]
+      operationId: createMedication
+      summary: Додати медикамент до каталогу
+      description: |
+        Задає назву, початковий залишок і (необов'язково) мінімальний поріг. Назва унікальна без
+        урахування регістру. Доступ: ADMIN. Вимоги: REQ-F-040, REQ-F-043.
+      x-requirements: [REQ-F-040, REQ-F-043]
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationCreate'
+            examples:
+              valid:
+                $ref: '#/components/examples/MedicationCreateRequestOk'
+      responses:
+        '201':
+          description: Медикамент створено
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medication'
+              examples:
+                success:
+                  $ref: '#/components/examples/MedicationCreatedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Конфлікт стану. Код `MEDICATION_NAME_TAKEN`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                medicationNameTaken:
+                  $ref: '#/components/examples/MedicationNameTakenError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Medications]
+      operationId: listMedications
+      summary: Каталог медикаментів
+      description: |
+        Сортування за `name`. Фільтр `lowStock=true` повертає препарати із залишком нижче порога.
+        Доступ: ADMIN, VETERINARIAN (лікар лише обирає зі списку). Вимоги: REQ-F-044.
+      x-requirements: [REQ-F-044]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - name: q
+          in: query
+          description: Підрядок у назві (без урахування регістру)
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+        - name: lowStock
+          in: query
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Сторінка медикаментів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationPage'
+              examples:
+                success:
+                  $ref: '#/components/examples/MedicationPageOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /medications/{medicationId}:
+    get:
+      tags: [Medications]
+      operationId: getMedication
+      summary: Отримати медикамент
+      description: "Доступ: ADMIN, VETERINARIAN. Вимоги: REQ-F-040."
+      x-requirements: [REQ-F-040]
+      x-roles: [ADMIN, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/MedicationId'
+      responses:
+        '200':
+          description: Медикамент
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medication'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Medications]
+      operationId: updateMedication
+      summary: Редагувати медикамент (назва, мінімальний поріг)
+      description: |
+        Залишок цією операцією не змінюється (поле `quantity` дає 422 `IMMUTABLE_FIELD`): він змінюється
+        лише через `adjust-stock` і збереження прийомів. Доступ: ADMIN. Вимоги: REQ-F-041, REQ-F-043.
+      x-requirements: [REQ-F-041, REQ-F-043]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/MedicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationUpdate'
+      responses:
+        '200':
+          description: Медикамент оновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medication'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Код `MEDICATION_NAME_TAKEN`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                medicationNameTaken:
+                  $ref: '#/components/examples/MedicationNameTakenError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /medications/{medicationId}/adjust-stock:
+    post:
+      tags: [Medications]
+      operationId: adjustMedicationStock
+      summary: Ручне коригування залишку
+      description: |
+        Змінює залишок на `delta` (додатне значення збільшує, від'ємне зменшує). Результат менший за 0
+        відхиляється (409 `NEGATIVE_STOCK`). Сповіщення про низький залишок ця операція не створює.
+        Доступ: ADMIN. Вимоги: REQ-F-042, REQ-F-048.
+      x-requirements: [REQ-F-042, REQ-F-048]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/MedicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustment'
+            examples:
+              valid:
+                $ref: '#/components/examples/StockAdjustmentRequestOk'
+      responses:
+        '200':
+          description: Залишок скориговано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medication'
+              examples:
+                success:
+                  $ref: '#/components/examples/StockAdjustedResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Конфлікт стану. Код `NEGATIVE_STOCK`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                negativeStock:
+                  $ref: '#/components/examples/NegativeStockError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      operationId: listNotifications
+      summary: Сповіщення про низький залишок
+      description: |
+        Створюються автоматично під час збереження прийому, коли залишок став нижчим за поріг; для одного
+        препарату не дублюються, поки існує непрочитане. Сортування за `createdAt` за спаданням.
+        Доступ: ADMIN. Вимоги: REQ-F-047.
+      x-requirements: [REQ-F-047]
+      x-roles: [ADMIN]
+      parameters:
+        - name: read
+          in: query
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Сторінка сповіщень
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+              examples:
+                success:
+                  $ref: '#/components/examples/NotificationsResponseOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /notifications/{notificationId}/mark-read:
+    post:
+      tags: [Notifications]
+      operationId: markNotificationRead
+      summary: Позначити сповіщення прочитаним
+      description: "Ідемпотентна: повторний виклик повертає 200. Прапорець `read` спільний для всіх адміністраторів. Доступ: ADMIN. Вимоги: REQ-F-047."
+      x-requirements: [REQ-F-047]
+      x-roles: [ADMIN]
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Сповіщення позначено прочитаним
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Непрозорий токен доступу, виданий `POST /auth/login`. Клієнт не повинен розбирати його вміст.
+
+  headers:
+    Location:
+      description: URI створеного ресурсу
+      schema:
+        type: string
+    WWWAuthenticate:
+      description: Схема автентифікації
+      schema:
+        type: string
+        example: Bearer
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Номер сторінки
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      description: Розмір сторінки
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    SearchQuery:
+      name: q
+      in: query
+      description: Пошук за іменем, підрядок без урахування регістру (2–100 символів)
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 100
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OwnerId:
+      name: ownerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PatientId:
+      name: patientId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DoctorId:
+      name: doctorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AppointmentId:
+      name: appointmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VisitId:
+      name: visitId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MedicationId:
+      name: medicationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Запит не вдалося розібрати (зламаний JSON, UUID чи дата не того формату). Код `MALFORMED_REQUEST`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            malformedRequest:
+              $ref: '#/components/examples/MalformedRequestError'
+    Unauthorized:
+      description: Токена немає, він недійсний або прострочений (`UNAUTHORIZED`), або невірні дані входу (`INVALID_CREDENTIALS`).
+      headers:
+        WWW-Authenticate:
+          $ref: '#/components/headers/WWWAuthenticate'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            unauthorized:
+              $ref: '#/components/examples/UnauthorizedError'
+            invalidCredentials:
+              $ref: '#/components/examples/InvalidCredentialsError'
+    Forbidden:
+      description: Недостатньо прав. Коди `FORBIDDEN`, `ACCOUNT_DEACTIVATED`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            forbidden:
+              $ref: '#/components/examples/ForbiddenError'
+            accountDeactivated:
+              $ref: '#/components/examples/AccountDeactivatedError'
+    NotFound:
+      description: Об'єкт із вказаним id не знайдено. Код `NOT_FOUND`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            notFound:
+              $ref: '#/components/examples/NotFoundError'
+    UnsupportedMediaType:
+      description: Тіло запиту не `application/json`. Код `UNSUPPORTED_MEDIA_TYPE`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            unsupportedMediaType:
+              $ref: '#/components/examples/UnsupportedMediaTypeError'
+    ValidationError:
+      description: Поля порушують правила. Код `VALIDATION_ERROR`, усі помилки в `details`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            validationError:
+              $ref: '#/components/examples/ValidationErrorExample'
+    InternalError:
+      description: Непередбачена помилка сервера. Код `INTERNAL_ERROR`; технічні деталі клієнту не віддаються.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            internalError:
+              $ref: '#/components/examples/InternalServerError'
+
+  examples:
+    SlotTakenError:
+      summary: Слот лікаря вже зайнятий (REQ-F-023)
+      value:
+        code: SLOT_TAKEN
+        message: Слот вже зайнятий
+        status: 409
+        timestamp: '2026-10-20T13:58:41+03:00'
+        path: /api/v1/appointments
+        traceId: 7b1c4e0a-3f6d-4a52-9a1e-5c2d9f8e1b30
+    InsufficientStockError:
+      summary: Недостатній залишок медикамента (REQ-F-046)
+      value:
+        code: INSUFFICIENT_STOCK
+        message: 'Недостатній залишок: Новокаїн (доступно: 5, запитано: 8)'
+        status: 409
+        timestamp: '2026-10-20T14:21:07+03:00'
+        path: /api/v1/appointments/3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63/visit
+        traceId: c0d3f1a8-92b4-4d77-8a6e-1f4b7c2e9a55
+        details:
+          - field: medications[1].quantity
+            reason: INSUFFICIENT_STOCK
+            message: 'Недостатній залишок: Новокаїн (доступно: 5, запитано: 8)'
+            params:
+              medicationId: 9e1a6c24-5b7d-4f08-a3c1-2d8e0b4f7a96
+              name: Новокаїн
+              available: 5
+              requested: 8
+    ValidationErrorExample:
+      summary: Помилка валідації
+      value:
+        code: VALIDATION_ERROR
+        message: Дані запиту некоректні
+        status: 422
+        timestamp: '2026-10-20T13:50:12+03:00'
+        path: /api/v1/appointments
+        traceId: 2f9e6b7d-1c40-4d28-b5a3-8e0c4a7f6d19
+        details:
+          - field: startsAt
+            reason: SLOT_NOT_ALIGNED
+            message: Початок слота має бути на :00 або :30
+          - field: doctorId
+            reason: REFERENCE_NOT_FOUND
+            message: Лікаря не знайдено
+
+    MalformedRequestError:
+      summary: Ідентифікатор у шляху не є UUID
+      value:
+        code: MALFORMED_REQUEST
+        message: "Запит не вдалося розібрати"
+        status: 400
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/visits/not-a-uuid
+        traceId: a1b2c3d4-0000-4000-8000-100000000001
+    UnauthorizedError:
+      summary: Токена немає, він недійсний або прострочений
+      value:
+        code: UNAUTHORIZED
+        message: "Потрібна автентифікація"
+        status: 401
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/doctors
+        traceId: a1b2c3d4-0000-4000-8000-100000000002
+    InvalidCredentialsError:
+      summary: Невірні дані входу
+      value:
+        code: INVALID_CREDENTIALS
+        message: "Невірний email або пароль"
+        status: 401
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/auth/login
+        traceId: a1b2c3d4-0000-4000-8000-100000000003
+    ForbiddenError:
+      summary: Роль не має прав на операцію (REQ-NF-002)
+      value:
+        code: FORBIDDEN
+        message: "Недостатньо прав"
+        status: 403
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/users
+        traceId: a1b2c3d4-0000-4000-8000-100000000004
+    AccountDeactivatedError:
+      summary: Вхід деактивованого користувача (REQ-F-003)
+      value:
+        code: ACCOUNT_DEACTIVATED
+        message: "Обліковий запис деактивовано"
+        status: 403
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/auth/login
+        traceId: a1b2c3d4-0000-4000-8000-100000000005
+    NotAssignedDoctorError:
+      summary: Прийом зберігає не призначений лікар
+      value:
+        code: NOT_ASSIGNED_DOCTOR
+        message: "Запис призначено іншому лікарю"
+        status: 403
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/appointments/3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63/visit
+        traceId: a1b2c3d4-0000-4000-8000-100000000006
+    NotVisitAuthorError:
+      summary: Редагування чужого прийому
+      value:
+        code: NOT_VISIT_AUTHOR
+        message: "Прийом створено іншим лікарем"
+        status: 403
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/visits/5d7e1b2c-8a40-4c6f-9e13-b0a2c4d6f801
+        traceId: a1b2c3d4-0000-4000-8000-100000000007
+    NotFoundError:
+      summary: Об'єкта з таким id немає
+      value:
+        code: NOT_FOUND
+        message: "Ресурс не знайдено"
+        status: 404
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/patients/9e1a6c24-5b7d-4f08-a3c1-2d8e0b4f7a96
+        traceId: a1b2c3d4-0000-4000-8000-100000000008
+    EmailTakenError:
+      summary: Email вже використано
+      value:
+        code: EMAIL_TAKEN
+        message: "Email вже зайнятий"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/users
+        traceId: a1b2c3d4-0000-4000-8000-100000000009
+    LastAdminError:
+      summary: Деактивація останнього активного адміністратора
+      value:
+        code: LAST_ADMIN
+        message: "Не можна деактивувати останнього адміністратора"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/users/1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578/deactivate
+        traceId: a1b2c3d4-0000-4000-8000-100000000010
+    UserAlreadyDeactivatedError:
+      summary: Повторна деактивація
+      value:
+        code: USER_ALREADY_DEACTIVATED
+        message: "Користувача вже деактивовано"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/users/1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578/deactivate
+        traceId: a1b2c3d4-0000-4000-8000-100000000011
+    AppointmentNotScheduledError:
+      summary: Дія над записом у кінцевому статусі
+      value:
+        code: APPOINTMENT_NOT_SCHEDULED
+        message: "Запис не у статусі «Заплановано»"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/appointments/3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63/cancel
+        traceId: a1b2c3d4-0000-4000-8000-100000000012
+    PatientArchivedError:
+      summary: Дія з архівною карткою (REQ-F-035)
+      value:
+        code: PATIENT_ARCHIVED
+        message: "Картку пацієнта архівовано"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/appointments
+        traceId: a1b2c3d4-0000-4000-8000-100000000013
+    PatientHasScheduledAppointmentsError:
+      summary: Архівування при наявних записах «Заплановано»
+      value:
+        code: PATIENT_HAS_SCHEDULED_APPOINTMENTS
+        message: "У пацієнта є заплановані записи"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/patients/9e1a6c24-5b7d-4f08-a3c1-2d8e0b4f7a96/archive
+        traceId: a1b2c3d4-0000-4000-8000-100000000014
+    NegativeStockError:
+      summary: Коригування дає від'ємний залишок (REQ-F-048)
+      value:
+        code: NEGATIVE_STOCK
+        message: "Залишок не може бути від'ємним"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/medications/9e1a6c24-5b7d-4f08-a3c1-2d8e0b4f7a96/adjust-stock
+        traceId: a1b2c3d4-0000-4000-8000-100000000015
+    MedicationNameTakenError:
+      summary: Назва медикамента вже є в каталозі
+      value:
+        code: MEDICATION_NAME_TAKEN
+        message: "Медикамент з такою назвою вже існує"
+        status: 409
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/medications
+        traceId: a1b2c3d4-0000-4000-8000-100000000016
+    UnsupportedMediaTypeError:
+      summary: Тіло запиту не JSON
+      value:
+        code: UNSUPPORTED_MEDIA_TYPE
+        message: "Підтримується лише application/json"
+        status: 415
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/owners
+        traceId: a1b2c3d4-0000-4000-8000-100000000017
+    InternalServerError:
+      summary: Непередбачена помилка сервера
+      value:
+        code: INTERNAL_ERROR
+        message: "Внутрішня помилка сервера"
+        status: 500
+        timestamp: '2026-10-20T14:00:00+03:00'
+        path: /api/v1/medications
+        traceId: a1b2c3d4-0000-4000-8000-100000000018
+
+    LoginRequestOk:
+      summary: "Позитивний сценарій: адміністратор входить у систему"
+      value:
+        email: admin@clinic.example
+        password: Str0ng-Passw0rd!
+    LoginResponseOk:
+      summary: "Позитивний сценарій: успішний вхід, видано токен на 8 годин"
+      value:
+        accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo-payload.demo-signature
+        tokenType: Bearer
+        expiresIn: 28800
+        user:
+          id: 5e8a1c37-0b92-4d64-9f08-a1c3e7b5d290
+          email: admin@clinic.example
+          fullName: Мельник Андрій Петрович
+          role: ADMIN
+    UserCreateRequestOk:
+      summary: "Позитивний сценарій: адміністратор створює обліковий запис лікаря"
+      value:
+        email: ivanenko@clinic.example
+        fullName: Іваненко Олександр Петрович
+        role: VETERINARIAN
+        password: Vet-Passw0rd-2026
+    UserCreatedResponseOk:
+      summary: "Позитивний сценарій: обліковий запис лікаря створено (пароль не повертається)"
+      value:
+        id: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+        email: ivanenko@clinic.example
+        fullName: Іваненко Олександр Петрович
+        role: VETERINARIAN
+        active: true
+        createdAt: '2026-09-01T09:00:00+03:00'
+    OwnerCreateRequestOk:
+      summary: "Позитивний сценарій: реєстрація власника (REQ-F-010)"
+      value:
+        fullName: Коваленко Марія Іванівна
+        phone: '+380501234567'
+        email: kovalenko@example.com
+        address: м. Київ, вул. Хрещатик, 1
+    OwnerCreatedResponseOk:
+      summary: "Позитивний сценарій: власника зареєстровано"
+      value:
+        id: 7a3d9f12-4c58-4e60-b1a7-5d2c8e0f4b93
+        fullName: Коваленко Марія Іванівна
+        phone: '+380501234567'
+        email: kovalenko@example.com
+        address: м. Київ, вул. Хрещатик, 1
+        createdAt: '2026-10-19T09:40:00+03:00'
+        updatedAt: '2026-10-19T09:40:00+03:00'
+    PatientCreateRequestOk:
+      summary: "Позитивний сценарій: реєстрація пацієнта з прив'язкою до власника (REQ-F-012)"
+      value:
+        ownerId: 7a3d9f12-4c58-4e60-b1a7-5d2c8e0f4b93
+        name: Барсик
+        species: Кіт
+        breed: Британська короткошерста
+        sex: MALE
+        birthDate: '2021-03-15'
+    PatientCreatedResponseOk:
+      summary: "Позитивний сценарій: пацієнта зареєстровано зі статусом ACTIVE"
+      value:
+        id: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+        ownerId: 7a3d9f12-4c58-4e60-b1a7-5d2c8e0f4b93
+        name: Барсик
+        species: Кіт
+        breed: Британська короткошерста
+        sex: MALE
+        birthDate: '2021-03-15'
+        status: ACTIVE
+        createdAt: '2026-10-19T09:45:00+03:00'
+        updatedAt: '2026-10-19T09:45:00+03:00'
+    ScheduleResponseOk:
+      summary: "Позитивний сценарій: сітка розкладу лікаря Іваненка О.П. на 20.10.2026 (фрагмент: вільні та зайнятий слоти)"
+      value:
+        doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+        from: '2026-10-20'
+        to: '2026-10-20'
+        slotMinutes: 30
+        slots:
+          - startsAt: '2026-10-20T13:30:00+03:00'
+            endsAt: '2026-10-20T14:00:00+03:00'
+            status: FREE
+            appointment: null
+          - startsAt: '2026-10-20T14:00:00+03:00'
+            endsAt: '2026-10-20T14:30:00+03:00'
+            status: BOOKED
+            appointment:
+              id: 3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63
+              patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+              patientName: Барсик
+              status: SCHEDULED
+          - startsAt: '2026-10-20T14:30:00+03:00'
+            endsAt: '2026-10-20T15:00:00+03:00'
+            status: FREE
+            appointment: null
+          - startsAt: '2026-10-20T15:00:00+03:00'
+            endsAt: '2026-10-20T15:30:00+03:00'
+            status: FREE
+            appointment: null
+    AppointmentCreateRequestOk:
+      summary: "Позитивний сценарій: запис Барсика до Іваненка О.П. на вільний слот 14:00 (BDD §9.2, REQ-F-023, сценарій 1)"
+      value:
+        doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+        patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+        startsAt: '2026-10-20T14:00:00+03:00'
+    AppointmentCreatedResponseOk:
+      summary: "Позитивний сценарій: запис створено зі статусом SCHEDULED, слот стає зайнятим"
+      value:
+        id: 3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63
+        doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+        patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+        startsAt: '2026-10-20T14:00:00+03:00'
+        endsAt: '2026-10-20T14:30:00+03:00'
+        status: SCHEDULED
+        visitId: null
+        createdAt: '2026-10-19T10:15:00+03:00'
+        updatedAt: '2026-10-19T10:15:00+03:00'
+    AppointmentRescheduleRequestOk:
+      summary: "Позитивний сценарій: перенесення запису на вільний слот 15:00 того самого лікаря (REQ-F-024)"
+      value:
+        startsAt: '2026-10-20T15:00:00+03:00'
+    AppointmentRescheduledResponseOk:
+      summary: "Позитивний сценарій: запис перенесено, старий слот 14:00 вільний"
+      value:
+        id: 3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63
+        doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+        patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+        startsAt: '2026-10-20T15:00:00+03:00'
+        endsAt: '2026-10-20T15:30:00+03:00'
+        status: SCHEDULED
+        visitId: null
+        createdAt: '2026-10-19T10:15:00+03:00'
+        updatedAt: '2026-10-19T16:20:00+03:00'
+    AppointmentCancelledResponseOk:
+      summary: "Позитивний сценарій: запис скасовано, слот вільний (REQ-F-025)"
+      value:
+        id: 3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63
+        doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+        patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+        startsAt: '2026-10-20T14:00:00+03:00'
+        endsAt: '2026-10-20T14:30:00+03:00'
+        status: CANCELLED
+        visitId: null
+        createdAt: '2026-10-19T10:15:00+03:00'
+        updatedAt: '2026-10-19T17:05:00+03:00'
+    VisitCreateRequestOk:
+      summary: "Позитивний сценарій: лікар зберігає прийом, що списує 3 одиниці Амоксициліну із залишку 10 (BDD §9.2, REQ-F-046, сценарій 1)"
+      value:
+        diagnosis: Бактеріальна інфекція верхніх дихальних шляхів
+        prescriptions: Амоксицилін, 3 одиниці, курс 5 днів
+        notes: Стан задовільний, повторний огляд через тиждень
+        medications:
+          - medicationId: 4b7c2e90-1a35-4d68-8f01-c9d3e5a7b214
+            quantity: 3
+    VisitCreatedResponseOk:
+      summary: "Позитивний сценарій: прийом збережено, запис стає COMPLETED, залишок Амоксициліну 10 → 7"
+      value:
+        id: 5d7e1b2c-8a40-4c6f-9e13-b0a2c4d6f801
+        appointmentId: 3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63
+        patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+        doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+        visitDate: '2026-10-20T14:00:00+03:00'
+        diagnosis: Бактеріальна інфекція верхніх дихальних шляхів
+        prescriptions: Амоксицилін, 3 одиниці, курс 5 днів
+        notes: Стан задовільний, повторний огляд через тиждень
+        medications:
+          - medicationId: 4b7c2e90-1a35-4d68-8f01-c9d3e5a7b214
+            medicationName: Амоксицилін
+            quantity: 3
+        createdAt: '2026-10-20T14:35:12+03:00'
+        updatedAt: '2026-10-20T14:35:12+03:00'
+    PatientVisitsResponseOk:
+      summary: "Позитивний сценарій: хронологія прийомів Барсика (REQ-F-034)"
+      value:
+        page: 1
+        pageSize: 20
+        total: 1
+        items:
+          - id: 5d7e1b2c-8a40-4c6f-9e13-b0a2c4d6f801
+            appointmentId: 3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63
+            patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+            doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+            visitDate: '2026-10-20T14:00:00+03:00'
+            diagnosis: Бактеріальна інфекція верхніх дихальних шляхів
+            prescriptions: Амоксицилін, 3 одиниці, курс 5 днів
+            notes: Стан задовільний, повторний огляд через тиждень
+            medications:
+              - medicationId: 4b7c2e90-1a35-4d68-8f01-c9d3e5a7b214
+                medicationName: Амоксицилін
+                quantity: 3
+            createdAt: '2026-10-20T14:35:12+03:00'
+            updatedAt: '2026-10-20T14:35:12+03:00'
+    MedicationCreateRequestOk:
+      summary: "Позитивний сценарій: додавання препарату з початковим залишком і порогом (REQ-F-040, REQ-F-043)"
+      value:
+        name: Метронідазол
+        quantity: 20
+        minThreshold: 5
+    MedicationCreatedResponseOk:
+      summary: "Позитивний сценарій: препарат додано до каталогу"
+      value:
+        id: 6d0f3b71-2e84-4a95-b8c6-0a9e1f5d7c23
+        name: Метронідазол
+        quantity: 20
+        minThreshold: 5
+        lowStock: false
+        createdAt: '2026-10-19T11:00:00+03:00'
+        updatedAt: '2026-10-19T11:00:00+03:00'
+    StockAdjustmentRequestOk:
+      summary: "Позитивний сценарій: надходження 5 одиниць препарату (REQ-F-042)"
+      value:
+        delta: 5
+    StockAdjustedResponseOk:
+      summary: "Позитивний сценарій: залишок Амоксициліну 7 → 12 після надходження"
+      value:
+        id: 4b7c2e90-1a35-4d68-8f01-c9d3e5a7b214
+        name: Амоксицилін
+        quantity: 12
+        minThreshold: 3
+        lowStock: false
+        createdAt: '2026-09-01T09:00:00+03:00'
+        updatedAt: '2026-10-21T09:10:00+03:00'
+    NotificationsResponseOk:
+      summary: "Позитивний сценарій: непрочитане сповіщення про низький залишок Новокаїну (REQ-F-047)"
+      value:
+        page: 1
+        pageSize: 20
+        total: 1
+        items:
+          - id: c2f4a6b8-1d3e-4f50-9a72-8b6c0d2e4f18
+            type: LOW_STOCK
+            medicationId: 9e1a6c24-5b7d-4f08-a3c1-2d8e0b4f7a96
+            medicationName: Новокаїн
+            quantity: 5
+            minThreshold: 10
+            read: false
+            createdAt: '2026-10-20T14:21:07+03:00'
+
+    MedicationPageOk:
+      summary: "Позитивний сценарій: каталог медикаментів (Новокаїн нижче порога, Амоксицилін у нормі)"
+      value:
+        page: 1
+        pageSize: 20
+        total: 2
+        items:
+          - id: 9e1a6c24-5b7d-4f08-a3c1-2d8e0b4f7a96
+            name: Новокаїн
+            quantity: 5
+            minThreshold: 10
+            lowStock: true
+            createdAt: '2026-09-01T09:00:00+03:00'
+            updatedAt: '2026-10-20T14:21:07+03:00'
+          - id: 4b7c2e90-1a35-4d68-8f01-c9d3e5a7b214
+            name: Амоксицилін
+            quantity: 10
+            minThreshold: 3
+            lowStock: false
+            createdAt: '2026-09-01T09:00:00+03:00'
+            updatedAt: '2026-10-18T11:30:00+03:00'
+    AppointmentPageOk:
+      summary: "Позитивний сценарій: записи лікаря Іваненка О.П. на 20.10.2026"
+      value:
+        page: 1
+        pageSize: 20
+        total: 1
+        items:
+          - id: 3f2a8c91-0d44-4be1-8f12-a77c5e0b9d63
+            doctorId: 1c8b3d5e-7f20-4a91-b6d4-e3f0a9c2d578
+            patientId: 2b6e4a80-9d13-4f57-a0c2-6e1d7b3c9f45
+            startsAt: '2026-10-20T14:00:00+03:00'
+            endsAt: '2026-10-20T14:30:00+03:00'
+            status: SCHEDULED
+            visitId: null
+            createdAt: '2026-10-19T10:15:00+03:00'
+            updatedAt: '2026-10-19T10:15:00+03:00'
+
+  schemas:
+    # ---------- Помилки ----------
+    ErrorCode:
+      type: string
+      description: Стабільний машинозчитуваний код помилки
+      enum:
+        - MALFORMED_REQUEST
+        - UNAUTHORIZED
+        - INVALID_CREDENTIALS
+        - FORBIDDEN
+        - ACCOUNT_DEACTIVATED
+        - NOT_ASSIGNED_DOCTOR
+        - NOT_VISIT_AUTHOR
+        - NOT_FOUND
+        - METHOD_NOT_ALLOWED
+        - EMAIL_TAKEN
+        - LAST_ADMIN
+        - USER_ALREADY_DEACTIVATED
+        - SLOT_TAKEN
+        - APPOINTMENT_NOT_SCHEDULED
+        - PATIENT_ARCHIVED
+        - PATIENT_HAS_SCHEDULED_APPOINTMENTS
+        - INSUFFICIENT_STOCK
+        - NEGATIVE_STOCK
+        - MEDICATION_NAME_TAKEN
+        - UNSUPPORTED_MEDIA_TYPE
+        - VALIDATION_ERROR
+        - INTERNAL_ERROR
+    ErrorDetailReason:
+      type: string
+      description: Причина помилки поля
+      enum:
+        - REQUIRED
+        - INVALID_FORMAT
+        - TOO_SHORT
+        - TOO_LONG
+        - OUT_OF_RANGE
+        - INVALID_ENUM
+        - UNKNOWN_FIELD
+        - IMMUTABLE_FIELD
+        - EMPTY_BODY
+        - REFERENCE_NOT_FOUND
+        - DOCTOR_NOT_AVAILABLE
+        - SLOT_NOT_ALIGNED
+        - OUTSIDE_WORKING_HOURS
+        - INVALID_RANGE
+        - RANGE_TOO_LARGE
+        - DUPLICATE_MEDICATION
+        - ZERO_DELTA
+        - INSUFFICIENT_STOCK
+    ErrorDetail:
+      type: object
+      required: [field, reason, message]
+      properties:
+        field:
+          type: string
+          nullable: true
+          description: Шлях до поля запиту; `null`, якщо помилка не прив'язана до поля
+          example: medications[1].quantity
+        reason:
+          $ref: '#/components/schemas/ErrorDetailReason'
+        message:
+          type: string
+        params:
+          type: object
+          additionalProperties: true
+          description: Додаткові значення (наприклад, `available`, `requested`)
+    Error:
+      type: object
+      required: [code, message, status, timestamp, path, traceId]
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+          description: Повідомлення українською для показу користувачу
+        status:
+          type: integer
+          description: Дублює HTTP-код стану
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        traceId:
+          type: string
+          format: uuid
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+
+    # ---------- Пагінація ----------
+    PageInfo:
+      type: object
+      required: [page, pageSize, total]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+          description: Загальна кількість елементів за фільтром
+    UserPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+    OwnerPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Owner'
+    PatientPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Patient'
+    AppointmentPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Appointment'
+    VisitPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Visit'
+    MedicationPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Medication'
+    NotificationPage:
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Notification'
+
+    # ---------- Перелічення ----------
+    Role:
+      type: string
+      enum: [ADMIN, VETERINARIAN]
+    PatientStatus:
+      type: string
+      enum: [ACTIVE, ARCHIVED]
+    Sex:
+      type: string
+      enum: [MALE, FEMALE, UNKNOWN]
+    AppointmentStatus:
+      type: string
+      enum: [SCHEDULED, COMPLETED, CANCELLED]
+    SlotStatus:
+      type: string
+      enum: [FREE, BOOKED]
+
+    # ---------- Автентифікація та користувачі ----------
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 72
+          writeOnly: true
+    AuthUser:
+      type: object
+      required: [id, email, fullName, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+    LoginResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn, user]
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum: [Bearer]
+        expiresIn:
+          type: integer
+          description: Строк дії токена в секундах
+          example: 28800
+        user:
+          $ref: '#/components/schemas/AuthUser'
+    User:
+      type: object
+      required: [id, email, fullName, role, active, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    UserCreate:
+      type: object
+      additionalProperties: false
+      required: [email, fullName, role, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Унікальний без урахування регістру; зберігається в нижньому регістрі
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/Role'
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          writeOnly: true
+          description: 8–72 символи і не більше 72 байтів UTF-8; у відповідях не повертається
+    Doctor:
+      type: object
+      required: [id, fullName]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+
+    # ---------- Власники та пацієнти ----------
+    Owner:
+      type: object
+      required: [id, fullName, phone, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    OwnerCreate:
+      type: object
+      additionalProperties: false
+      required: [fullName, phone]
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 150
+        phone:
+          type: string
+          pattern: '^\+?[0-9]{10,15}$'
+          description: Цифри без пробілів і дужок, необов'язковий початковий `+`
+          example: '+380501234567'
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          nullable: true
+        address:
+          type: string
+          minLength: 1
+          maxLength: 300
+          nullable: true
+    OwnerUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 150
+        phone:
+          type: string
+          pattern: '^\+?[0-9]{10,15}$'
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          nullable: true
+        address:
+          type: string
+          minLength: 1
+          maxLength: 300
+          nullable: true
+    Patient:
+      type: object
+      required: [id, ownerId, name, species, sex, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        species:
+          type: string
+        breed:
+          type: string
+          nullable: true
+        sex:
+          $ref: '#/components/schemas/Sex'
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          $ref: '#/components/schemas/PatientStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PatientCreate:
+      type: object
+      additionalProperties: false
+      required: [ownerId, name, species]
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+          description: Існуючий власник; після створення не змінюється
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        species:
+          type: string
+          minLength: 1
+          maxLength: 50
+        breed:
+          type: string
+          minLength: 1
+          maxLength: 100
+          nullable: true
+        sex:
+          allOf:
+            - $ref: '#/components/schemas/Sex'
+          default: UNKNOWN
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+          description: Не пізніше за поточну дату
+    PatientUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        species:
+          type: string
+          minLength: 1
+          maxLength: 50
+        breed:
+          type: string
+          minLength: 1
+          maxLength: 100
+          nullable: true
+        sex:
+          $ref: '#/components/schemas/Sex'
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+
+    # ---------- Розклад і записи ----------
+    Appointment:
+      type: object
+      required: [id, doctorId, patientId, startsAt, endsAt, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        doctorId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+          example: '2026-10-20T14:00:00+03:00'
+        endsAt:
+          type: string
+          format: date-time
+          description: '`startsAt` + 30 хвилин'
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+        visitId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Ідентифікатор прийому; заповнюється після збереження результатів
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AppointmentCreate:
+      type: object
+      additionalProperties: false
+      required: [doctorId, patientId, startsAt]
+      properties:
+        doctorId:
+          type: string
+          format: uuid
+          description: Активний користувач з роллю `VETERINARIAN`
+        patientId:
+          type: string
+          format: uuid
+          description: Існуючий пацієнт зі статусом `ACTIVE`
+        startsAt:
+          type: string
+          format: date-time
+          description: |
+            Початок слота: секунди дорівнюють 0, хвилини 0 або 30, у межах 09:00–17:30 за часом клініки.
+          example: '2026-10-20T14:00:00+03:00'
+    AppointmentUpdate:
+      type: object
+      additionalProperties: false
+      required: [startsAt]
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+          description: Новий слот того самого лікаря (правила як у `AppointmentCreate.startsAt`)
+    SlotAppointment:
+      type: object
+      nullable: true
+      required: [id, patientId, patientName, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        patientName:
+          type: string
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+    Slot:
+      type: object
+      required: [startsAt, endsAt, status]
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+        appointment:
+          allOf:
+            - $ref: '#/components/schemas/SlotAppointment'
+          type: object
+          nullable: true
+          description: Запис, що займає слот; `null` для вільного слота
+    Schedule:
+      type: object
+      required: [doctorId, from, to, slotMinutes, slots]
+      properties:
+        doctorId:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        slotMinutes:
+          type: integer
+          enum: [30]
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+
+    # ---------- Прийоми ----------
+    VisitMedication:
+      type: object
+      required: [medicationId, medicationName, quantity]
+      properties:
+        medicationId:
+          type: string
+          format: uuid
+        medicationName:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+    Visit:
+      type: object
+      required: [id, appointmentId, patientId, doctorId, visitDate, diagnosis, medications, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        appointmentId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        doctorId:
+          type: string
+          format: uuid
+        visitDate:
+          type: string
+          format: date-time
+          description: Дорівнює `startsAt` запису, до якого належить прийом
+        diagnosis:
+          type: string
+        prescriptions:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        medications:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisitMedication'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    VisitMedicationInput:
+      type: object
+      additionalProperties: false
+      required: [medicationId, quantity]
+      properties:
+        medicationId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+    VisitCreate:
+      type: object
+      additionalProperties: false
+      required: [diagnosis]
+      properties:
+        diagnosis:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        prescriptions:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          nullable: true
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          nullable: true
+        medications:
+          type: array
+          maxItems: 50
+          default: []
+          description: Витрачені медикаменти; один препарат не повторюється
+          items:
+            $ref: '#/components/schemas/VisitMedicationInput'
+    VisitUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        diagnosis:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        prescriptions:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          nullable: true
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          nullable: true
+
+    # ---------- Медикаменти та сповіщення ----------
+    Medication:
+      type: object
+      required: [id, name, quantity, lowStock, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 0
+          description: Поточний залишок
+        minThreshold:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Мінімальний поріг; `null`, якщо не задано
+        lowStock:
+          type: boolean
+          description: '`true`, якщо поріг заданий і залишок нижчий за нього'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    MedicationCreate:
+      type: object
+      additionalProperties: false
+      required: [name, quantity]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          description: Унікальна без урахування регістру
+        quantity:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          description: Початковий залишок
+        minThreshold:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          nullable: true
+    MedicationUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        minThreshold:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          nullable: true
+    StockAdjustment:
+      type: object
+      additionalProperties: false
+      required: [delta]
+      properties:
+        delta:
+          type: integer
+          minimum: -1000000
+          maximum: 1000000
+          writeOnly: true
+          description: |
+            Зміна залишку: додатне значення збільшує, від'ємне зменшує. Не дорівнює 0.
+            Результат має бути в межах 0–1 000 000.
+          example: 5
+    Notification:
+      type: object
+      required: [id, type, medicationId, medicationName, quantity, read, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [LOW_STOCK]
+        medicationId:
+          type: string
+          format: uuid
+        medicationName:
+          type: string
+        quantity:
+          type: integer
+          minimum: 0
+          description: Залишок на момент створення сповіщення
+        minThreshold:
+          type: integer
+          minimum: 0
+          nullable: true
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time

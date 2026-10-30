@@ -349,4 +349,32 @@ class CreateUserTest {
 				.andExpect(jsonPath("$.details[0].field", equalTo("fullName")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("TOO_LONG")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: невідома роль — 422 VALIDATION_ERROR, поле role, причина INVALID_ENUM (AD-18)")
+	void adminCreatesUserWithUnknownRole_returns422InvalidEnum() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "lukianenko@clinic.example",
+				  "fullName": "Лук'яненко Софія Олегівна",
+				  "role": "SURGEON",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details.length()", equalTo(1)))
+				.andExpect(jsonPath("$.details[0].field", equalTo("role")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("INVALID_ENUM")));
+	}
 }

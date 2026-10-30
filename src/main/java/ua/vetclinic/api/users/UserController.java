@@ -44,6 +44,6 @@ class UserController {
 		return userRepository.findById(userId)
 				.map(UserEntity::toResponse)
 				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+				.orElseThrow(() -> new UserNotFoundException(userId));
 	}
 }

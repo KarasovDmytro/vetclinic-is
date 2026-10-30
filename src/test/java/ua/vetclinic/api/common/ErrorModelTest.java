@@ -1,5 +1,6 @@
 package ua.vetclinic.api.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -7,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,5 +51,21 @@ class ErrorModelTest {
 				.andExpect(jsonPath("$.timestamp", matchesPattern(OFFSET_DATE_TIME_PATTERN)))
 				.andExpect(jsonPath("$.path", equalTo("/api/v1/users/" + userId)))
 				.andExpect(jsonPath("$.traceId", matchesPattern(UUID_PATTERN)));
+	}
+
+	@Test
+	@DisplayName("AD-18: заголовок X-Request-Id збігається з traceId у тілі помилки")
+	void errorResponse_hasRequestIdHeaderEqualToTraceId() throws Exception {
+		// Arrange
+		String userId = "8a5d1f60-2b3c-4d9e-9f47-61e0c3b8a2d5";
+
+		// Act
+		var result = mockMvc.perform(get("/api/v1/users/" + userId)
+				.with(user("admin").roles("ADMIN")))
+				.andReturn();
+
+		// Assert
+		String traceId = JsonPath.read(result.getResponse().getContentAsString(), "$.traceId");
+		assertThat(result.getResponse().getHeader("X-Request-Id"), equalTo(traceId));
 	}
 }

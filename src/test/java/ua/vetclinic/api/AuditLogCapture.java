@@ -7,14 +7,22 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import org.slf4j.LoggerFactory;
 
-/** Перехоплює події журналу аудиту (іменований логер AUDIT, AD-24.1). */
+/** Перехоплює події іменованого логера: за замовчуванням журналу аудиту AUDIT (AD-24.1). */
 public final class AuditLogCapture {
 
 	public static final String AUDIT_LOGGER_NAME = "AUDIT";
 
-	private final Logger logger = (Logger) LoggerFactory.getLogger(AUDIT_LOGGER_NAME);
+	private final Logger logger;
 
 	private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+
+	public AuditLogCapture() {
+		this(AUDIT_LOGGER_NAME);
+	}
+
+	public AuditLogCapture(String loggerName) {
+		this.logger = (Logger) LoggerFactory.getLogger(loggerName);
+	}
 
 	public void start() {
 		appender.start();

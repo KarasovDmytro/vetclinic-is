@@ -53,11 +53,10 @@ class UserController {
 	}
 
 	@GetMapping
-	UserPage listUsers(@RequestParam(required = false) Role role, @RequestParam(defaultValue = "1") int page,
-			@RequestParam(defaultValue = "20") @Max(100) int pageSize) {
-		PageRequest pageRequest = PageRequest.of(page - 1, pageSize, Sort.by("fullName"));
-		Page<UserEntity> users = role == null ? userRepository.findAll(pageRequest)
-				: userRepository.findByRole(role, pageRequest);
+	UserPage listUsers(@RequestParam(required = false) Role role, @RequestParam(required = false) Boolean active,
+			@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") @Max(100) int pageSize) {
+		Page<UserEntity> users = userRepository.search(role, active,
+				PageRequest.of(page - 1, pageSize, Sort.by("fullName")));
 		return new UserPage(page, pageSize, users.getTotalElements(),
 				users.getContent().stream().map(UserEntity::toResponse).toList());
 	}

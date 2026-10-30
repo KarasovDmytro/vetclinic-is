@@ -43,4 +43,20 @@ class OwnerEntity {
 	OwnerResponse toResponse() {
 		return new OwnerResponse(id, fullName, phone, email, address, createdAt, updatedAt);
 	}
+
+	void apply(UpdateOwnerRequest changes, OffsetDateTime now) {
+		if (changes.isProvided("fullName") && changes.fullName() != null) {
+			this.fullName = changes.fullName();
+		}
+		if (changes.isProvided("phone") && changes.phone() != null) {
+			this.phone = changes.phone();
+		}
+		if (changes.isProvided("email")) {
+			this.email = changes.email();
+		}
+		if (changes.isProvided("address")) {
+			this.address = changes.address();
+		}
+		this.updatedAt = now;
+	}
 }

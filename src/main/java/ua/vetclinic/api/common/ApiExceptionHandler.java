@@ -1,6 +1,7 @@
 package ua.vetclinic.api.common;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -81,8 +82,15 @@ class ApiExceptionHandler {
 		return validationError(request, exception.getParameterValidationResults().stream()
 				.flatMap(result -> result.getResolvableErrors().stream()
 						.map(error -> new ErrorDetail(result.getMethodParameter().getParameterName(),
-								reasonOf(constraintOf(error)), error.getDefaultMessage())))
+								reasonOf(constraintOf(error),
+										() -> result.unwrap(error, ConstraintViolation.class)),
+								error.getDefaultMessage())))
 				.toList());
+	}
+
+	@ExceptionHandler(EmptyBodyException.class)
+	ResponseEntity<ErrorResponse> handleEmptyBody(EmptyBodyException exception, HttpServletRequest request) {
+		return validationError(request, List.of(new ErrorDetail("body", "EMPTY_BODY", "Тіло запиту порожнє")));
 	}
 
 	private static ResponseEntity<ErrorResponse> validationError(HttpServletRequest request,
@@ -97,14 +105,17 @@ class ApiExceptionHandler {
 	}
 
 	private static String reasonOf(FieldError error) {
-		if ("Size".equals(error.getCode())) {
-			return isBelowMinimum(error) ? "TOO_SHORT" : "TOO_LONG";
-		}
-		return reasonOf(error.getCode());
+		return reasonOf(error.getCode(), () -> error.unwrap(ConstraintViolation.class));
 	}
 
-	private static boolean isBelowMinimum(FieldError error) {
-		ConstraintViolation<?> violation = error.unwrap(ConstraintViolation.class);
+	private static String reasonOf(String constraintCode, Supplier<ConstraintViolation<?>> violation) {
+		if ("Size".equals(constraintCode)) {
+			return isBelowMinimum(violation.get()) ? "TOO_SHORT" : "TOO_LONG";
+		}
+		return reasonOf(constraintCode);
+	}
+
+	private static boolean isBelowMinimum(ConstraintViolation<?> violation) {
 		int min = (int) violation.getConstraintDescriptor().getAttributes().get("min");
 		return violation.getInvalidValue() instanceof CharSequence value && value.length() < min;
 	}

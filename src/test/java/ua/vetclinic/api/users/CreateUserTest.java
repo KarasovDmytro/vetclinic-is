@@ -214,4 +214,31 @@ class CreateUserTest {
 				.andExpect(jsonPath("$.details[0].field", equalTo("email")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("REQUIRED")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: роль не вказано — 422 VALIDATION_ERROR, поле role, причина REQUIRED (AD-17)")
+	void adminCreatesUserWithoutRole_returns422Required() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "kuzmenko@clinic.example",
+				  "fullName": "Кузьменко Леся Андріївна",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details.length()", equalTo(1)))
+				.andExpect(jsonPath("$.details[0].field", equalTo("role")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("REQUIRED")));
+	}
 }

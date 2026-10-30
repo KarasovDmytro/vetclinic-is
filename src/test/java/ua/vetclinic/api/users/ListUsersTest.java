@@ -100,6 +100,24 @@ class ListUsersTest {
 				.andExpect(jsonPath("$.items.length()", equalTo(1)));
 	}
 
+	@Test
+	@DisplayName("AD-17: pageSize більший за 100 — 422 VALIDATION_ERROR з причиною OUT_OF_RANGE")
+	void adminListsUsersWithTooLargePageSize_returns422OutOfRange() throws Exception {
+		// Arrange
+		String pageSize = "101";
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.param("pageSize", pageSize)
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details[0].field", equalTo("pageSize")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("OUT_OF_RANGE")));
+	}
+
 	private void createUser(String email, String fullName, String role) throws Exception {
 		String requestBody = """
 				{

@@ -2,6 +2,7 @@ package ua.vetclinic.api.users;
 
 import java.net.URI;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -26,10 +27,11 @@ class UserController {
 	@PostMapping
 	@PreAuthorize("hasRole('ADMIN')")
 	ResponseEntity<UserResponse> createUser(@RequestBody CreateUserRequest request) {
-		if (userRepository.existsByEmail(request.email())) {
-			throw new EmailTakenException(request.email());
+		String email = request.email().toLowerCase(Locale.ROOT);
+		if (userRepository.existsByEmail(email)) {
+			throw new EmailTakenException(email);
 		}
-		UserEntity user = new UserEntity(UUID.randomUUID(), request.email(), request.fullName(), request.role(), true,
+		UserEntity user = new UserEntity(UUID.randomUUID(), email, request.fullName(), request.role(), true,
 				OffsetDateTime.now());
 		UserResponse body = userRepository.save(user).toResponse();
 		return ResponseEntity.created(URI.create("/api/v1/users/" + body.id())).body(body);

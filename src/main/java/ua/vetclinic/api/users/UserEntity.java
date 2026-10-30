@@ -39,6 +39,10 @@ class UserEntity {
 		this.createdAt = createdAt;
 	}
 
+	boolean isActive() {
+		return active;
+	}
+
 	void deactivate() {
 		this.active = false;
 	}

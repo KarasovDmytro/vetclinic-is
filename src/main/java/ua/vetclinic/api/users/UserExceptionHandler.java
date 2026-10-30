@@ -21,6 +21,11 @@ class UserExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("code", "NOT_FOUND"));
 	}
 
+	@ExceptionHandler(UserAlreadyDeactivatedException.class)
+	ResponseEntity<Map<String, String>> handleUserAlreadyDeactivated(UserAlreadyDeactivatedException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("code", "USER_ALREADY_DEACTIVATED"));
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException exception) {
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(Map.of("code", "VALIDATION_ERROR"));

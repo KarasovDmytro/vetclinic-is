@@ -65,4 +65,18 @@ class GetUserTest {
 				.andExpect(jsonPath("$.createdAt").exists())
 				.andExpect(jsonPath("$.password").doesNotExist());
 	}
+
+	@Test
+	@DisplayName("REQ-F-005: лікар не може отримати обліковий запис — 403")
+	void veterinarianGetsUser_returns403() throws Exception {
+		// Arrange
+		String userId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users/" + userId)
+				.with(user("vet").roles("VETERINARIAN")));
+
+		// Assert
+		response.andExpect(status().isForbidden());
+	}
 }

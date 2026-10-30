@@ -31,10 +31,10 @@ class LoginTest {
 	@DisplayName("AD-01: вхід з вірними даними — 200, bearer-токен на 8 годин і дані користувача без пароля")
 	void validCredentials_returns200WithBearerTokenAndUser() throws Exception {
 		// Arrange
-		createUser("kovalchuk@clinic.example", "Ковальчук Андрій Миколайович", "VETERINARIAN", "Vet-Passw0rd-2026");
+		createUser("login.kovalchuk@clinic.example", "Ковальчук Андрій Миколайович", "VETERINARIAN", "Vet-Passw0rd-2026");
 		String loginBody = """
 				{
-				  "email": "kovalchuk@clinic.example",
+				  "email": "login.kovalchuk@clinic.example",
 				  "password": "Vet-Passw0rd-2026"
 				}
 				""";
@@ -51,7 +51,7 @@ class LoginTest {
 				.andExpect(jsonPath("$.tokenType", equalTo("Bearer")))
 				.andExpect(jsonPath("$.expiresIn", equalTo(28800)))
 				.andExpect(jsonPath("$.user.id", matchesPattern(UUID_PATTERN)))
-				.andExpect(jsonPath("$.user.email", equalTo("kovalchuk@clinic.example")))
+				.andExpect(jsonPath("$.user.email", equalTo("login.kovalchuk@clinic.example")))
 				.andExpect(jsonPath("$.user.fullName", equalTo("Ковальчук Андрій Миколайович")))
 				.andExpect(jsonPath("$.user.role", equalTo("VETERINARIAN")))
 				.andExpect(jsonPath("$.user.password").doesNotExist())

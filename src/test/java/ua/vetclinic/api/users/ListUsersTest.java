@@ -124,7 +124,7 @@ class ListUsersTest {
 	void adminListsUsersFilteredByRole_returnsOnlyThatRole() throws Exception {
 		// Arrange
 		createUser("zaharchenko@clinic.example", "Захарченко Віктор Олегович", "ADMIN");
-		createUser("lysenko@clinic.example", "Лисенко Анна Миколаївна", "VETERINARIAN");
+		createUser("bilyk@clinic.example", "Білик Анна Миколаївна", "VETERINARIAN");
 
 		// Act
 		var response = mockMvc.perform(get("/api/v1/users")

@@ -241,4 +241,31 @@ class CreateUserTest {
 				.andExpect(jsonPath("$.details[0].field", equalTo("role")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("REQUIRED")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: пароль не вказано — 422 VALIDATION_ERROR, поле password, причина REQUIRED (AD-11)")
+	void adminCreatesUserWithoutPassword_returns422Required() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "hrytsenko@clinic.example",
+				  "fullName": "Гриценко Павло Васильович",
+				  "role": "VETERINARIAN"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details.length()", equalTo(1)))
+				.andExpect(jsonPath("$.details[0].field", equalTo("password")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("REQUIRED")));
+	}
 }

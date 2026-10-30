@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,7 +139,30 @@ class ListUsersTest {
 				.andExpect(jsonPath("$.items[*].role", everyItem(equalTo("ADMIN"))));
 	}
 
-	private void createUser(String email, String fullName, String role) throws Exception {
+	@Test
+	@DisplayName("REQ-F-001: фільтр active=false повертає лише деактивованих користувачів")
+	void adminListsUsersFilteredByInactive_returnsOnlyDeactivated() throws Exception {
+		// Arrange
+		createUser("moroz@clinic.example", "Мороз Діана Василівна", "VETERINARIAN");
+		String deactivatedId = createUser("kovalchuk@clinic.example", "Ковальчук Роман Іванович", "VETERINARIAN");
+		mockMvc.perform(post("/api/v1/users/" + deactivatedId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()))
+				.andExpect(status().isOk());
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.param("active", "false")
+				.param("pageSize", "100")
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total", greaterThanOrEqualTo(1)))
+				.andExpect(jsonPath("$.items[*].active", everyItem(equalTo(false))));
+	}
+
+	private String createUser(String email, String fullName, String role) throws Exception {
 		String requestBody = """
 				{
 				  "email": "%s",
@@ -147,11 +171,13 @@ class ListUsersTest {
 				  "password": "Vet-Passw0rd-2026"
 				}
 				""".formatted(email, fullName, role);
-		mockMvc.perform(post("/api/v1/users")
+		var result = mockMvc.perform(post("/api/v1/users")
 				.with(user("admin").roles("ADMIN"))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(requestBody))
-				.andExpect(status().isCreated());
+				.andExpect(status().isCreated())
+				.andReturn();
+		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
 	}
 }

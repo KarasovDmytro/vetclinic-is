@@ -57,6 +57,7 @@ class ApiExceptionHandler {
 		return switch (constraintCode == null ? "" : constraintCode) {
 			case "NotBlank", "NotNull" -> "REQUIRED";
 			case "Min", "Max" -> "OUT_OF_RANGE";
+			case "Size" -> "TOO_SHORT";
 			default -> "INVALID_FORMAT";
 		};
 	}

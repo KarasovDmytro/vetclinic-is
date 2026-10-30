@@ -174,6 +174,26 @@ class ErrorModelTest {
 	}
 
 	@Test
+	@DisplayName("AD-18: непідтримуваний Content-Type — 415 UNSUPPORTED_MEDIA_TYPE")
+	void unsupportedContentType_returns415UnsupportedMediaType() throws Exception {
+		// Arrange
+		String requestBody = "email=nobody@clinic.example&password=Vet-Passw0rd-2026";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.TEXT_PLAIN)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnsupportedMediaType())
+				.andExpect(jsonPath("$.code", equalTo("UNSUPPORTED_MEDIA_TYPE")))
+				.andExpect(jsonPath("$.message", equalTo("Підтримується лише application/json")))
+				.andExpect(jsonPath("$.status", equalTo(415)))
+				.andExpect(jsonPath("$.path", equalTo("/api/v1/auth/login")));
+	}
+
+	@Test
 	@DisplayName("AD-18: ідентифікатор у шляху не є UUID — 400 MALFORMED_REQUEST")
 	void nonUuidPathVariable_returns400MalformedRequest() throws Exception {
 		// Arrange

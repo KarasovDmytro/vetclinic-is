@@ -116,6 +116,42 @@ class ListUsersTest {
 	}
 
 	@Test
+	@DisplayName("AD-17: page менший за 1 — 422 VALIDATION_ERROR з причиною OUT_OF_RANGE")
+	void adminListsUsersWithZeroPage_returns422OutOfRange() throws Exception {
+		// Arrange
+		String page = "0";
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.param("page", page)
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details[0].field", equalTo("page")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("OUT_OF_RANGE")));
+	}
+
+	@Test
+	@DisplayName("AD-17: pageSize менший за 1 — 422 VALIDATION_ERROR з причиною OUT_OF_RANGE")
+	void adminListsUsersWithZeroPageSize_returns422OutOfRange() throws Exception {
+		// Arrange
+		String pageSize = "0";
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.param("pageSize", pageSize)
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details[0].field", equalTo("pageSize")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("OUT_OF_RANGE")));
+	}
+
+	@Test
 	@DisplayName("REQ-F-001: фільтр role повертає лише користувачів із цією роллю")
 	void adminListsUsersFilteredByRole_returnsOnlyThatRole() throws Exception {
 		// Arrange

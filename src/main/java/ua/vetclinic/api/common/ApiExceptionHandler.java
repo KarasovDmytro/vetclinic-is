@@ -8,6 +8,7 @@ import jakarta.validation.ConstraintViolation;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,6 +25,13 @@ class ApiExceptionHandler {
 		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).headers(exception.getHeaders())
 				.body(ErrorResponse.of(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
 						"Метод не підтримується", request));
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException exception,
+			HttpServletRequest request) {
+		return ErrorResponse.entity(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Запит не вдалося розібрати",
+				request);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

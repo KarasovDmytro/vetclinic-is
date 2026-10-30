@@ -8,6 +8,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.TestcontainersConfiguration;
 
@@ -107,5 +109,33 @@ class ErrorModelTest {
 		// Assert
 		response.andExpect(status().isMethodNotAllowed())
 				.andExpect(header().string("Allow", containsString("GET")));
+	}
+
+	@Test
+	@DisplayName("AD-18: відповідь 422 перелічує помилки полів у details (field, reason, message)")
+	void missingFullName_returns422WithFieldDetails() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "tymoshenko@clinic.example",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details.length()", equalTo(1)))
+				.andExpect(jsonPath("$.details[0].field", equalTo("fullName")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("REQUIRED")))
+				.andExpect(jsonPath("$.details[0].message").isNotEmpty());
 	}
 }

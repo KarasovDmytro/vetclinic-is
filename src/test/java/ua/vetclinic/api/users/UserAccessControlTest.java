@@ -51,6 +51,30 @@ class UserAccessControlTest {
 	}
 
 	@Test
+	@DisplayName("AD-18: перевірка ролі йде перед валідацією тіла — лікар з невалідним запитом отримує 403")
+	void veterinarianCreatesUserWithInvalidBody_returns403BeforeValidation() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "tkachenko@clinic.example",
+				  "fullName": "Ткаченко Василь Іванович",
+				  "role": "VETERINARIAN",
+				  "password": "short"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("vet").roles("VETERINARIAN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isForbidden());
+	}
+
+	@Test
 	@DisplayName("REQ-F-004: запит без автентифікації відхиляється — 401 UNAUTHORIZED")
 	void anonymousCreatesUser_returns401Unauthorized() throws Exception {
 		// Arrange

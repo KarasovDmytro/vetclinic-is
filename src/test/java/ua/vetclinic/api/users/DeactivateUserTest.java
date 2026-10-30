@@ -59,4 +59,20 @@ class DeactivateUserTest {
 				.andExpect(jsonPath("$.id", equalTo(userId)))
 				.andExpect(jsonPath("$.active", equalTo(false)));
 	}
+
+	@Test
+	@DisplayName("REQ-F-002: деактивація неіснуючого користувача — 404 NOT_FOUND")
+	void adminDeactivatesUnknownUser_returns404NotFound() throws Exception {
+		// Arrange
+		String unknownId = "00000000-0000-4000-8000-000000000405";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users/" + unknownId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()));
+
+		// Assert
+		response.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
+	}
 }

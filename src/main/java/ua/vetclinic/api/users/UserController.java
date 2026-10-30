@@ -7,6 +7,9 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,6 +50,13 @@ class UserController {
 		}
 		user.deactivate();
 		return ResponseEntity.ok(userRepository.save(user).toResponse());
+	}
+
+	@GetMapping
+	UserPage listUsers() {
+		Page<UserEntity> users = userRepository.findAll(PageRequest.of(0, 20, Sort.by("fullName")));
+		return new UserPage(1, 20, users.getTotalElements(),
+				users.getContent().stream().map(UserEntity::toResponse).toList());
 	}
 
 	@GetMapping("/{userId}")

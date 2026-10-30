@@ -268,4 +268,31 @@ class CreateUserTest {
 				.andExpect(jsonPath("$.details[0].field", equalTo("password")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("REQUIRED")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: пароль коротший за 8 символів — поле password, причина TOO_SHORT (AD-11)")
+	void adminCreatesUserWithTooShortPassword_returnsTooShortReason() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "stepanenko@clinic.example",
+				  "fullName": "Степаненко Віра Миколаївна",
+				  "role": "VETERINARIAN",
+				  "password": "Short7!"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.details.length()", equalTo(1)))
+				.andExpect(jsonPath("$.details[0].field", equalTo("password")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("TOO_SHORT")));
+	}
 }

@@ -1,6 +1,7 @@
 package ua.vetclinic.api.users;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -88,5 +89,22 @@ class GetUserTest {
 		// Assert
 		response.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
+	}
+
+	@Test
+	@DisplayName("AD-19.1: createdAt користувача віддається з зсувом часового поясу клініки, а не в UTC")
+	void createdAt_isReturnedInClinicTimeZone() throws Exception {
+		// Arrange
+		String userId = ua.vetclinic.api.TestAccounts.createUser(mockMvc, "zone.user@clinic.example",
+				"Часовий Пояс Користувач", "VETERINARIAN");
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users/" + userId)
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.createdAt",
+						matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?\\+0[23]:00")));
 	}
 }

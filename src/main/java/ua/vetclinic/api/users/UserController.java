@@ -39,6 +39,13 @@ class UserController {
 		return ResponseEntity.created(URI.create("/api/v1/users/" + body.id())).body(body);
 	}
 
+	@PostMapping("/{userId}/deactivate")
+	ResponseEntity<UserResponse> deactivateUser(@PathVariable UUID userId) {
+		UserEntity user = userRepository.findById(userId).orElseThrow();
+		user.deactivate();
+		return ResponseEntity.ok(userRepository.save(user).toResponse());
+	}
+
 	@GetMapping("/{userId}")
 	ResponseEntity<UserResponse> getUser(@PathVariable UUID userId) {
 		return userRepository.findById(userId)

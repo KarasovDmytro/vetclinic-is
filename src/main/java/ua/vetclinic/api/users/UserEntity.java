@@ -39,6 +39,10 @@ class UserEntity {
 		this.createdAt = createdAt;
 	}
 
+	void deactivate() {
+		this.active = false;
+	}
+
 	UserResponse toResponse() {
 		return new UserResponse(id, email, fullName, role, active, createdAt);
 	}

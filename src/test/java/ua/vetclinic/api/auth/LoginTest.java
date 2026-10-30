@@ -58,6 +58,33 @@ class LoginTest {
 				.andExpect(jsonPath("$.user.passwordHash").doesNotExist());
 	}
 
+	@Test
+	@DisplayName("AD-01: невірний пароль — 401 INVALID_CREDENTIALS")
+	void wrongPassword_returns401InvalidCredentials() throws Exception {
+		// Arrange
+		createUser("login.melnyk@clinic.example", "Мельник Тетяна Олексіївна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		String loginBody = """
+				{
+				  "email": "login.melnyk@clinic.example",
+				  "password": "Wrong-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code", equalTo("INVALID_CREDENTIALS")))
+				.andExpect(jsonPath("$.message", equalTo("Невірний email або пароль")))
+				.andExpect(jsonPath("$.status", equalTo(401)))
+				.andExpect(jsonPath("$.path", equalTo("/api/v1/auth/login")))
+				.andExpect(jsonPath("$.accessToken").doesNotExist());
+	}
+
 	private void createUser(String email, String fullName, String role, String password) throws Exception {
 		String requestBody = """
 				{

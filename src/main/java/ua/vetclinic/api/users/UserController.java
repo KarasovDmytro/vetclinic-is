@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -51,9 +52,9 @@ class UserController {
 	}
 
 	@GetMapping
-	UserPage listUsers() {
-		Page<UserEntity> users = userRepository.findAll(PageRequest.of(0, 20, Sort.by("fullName")));
-		return new UserPage(1, 20, users.getTotalElements(),
+	UserPage listUsers(@RequestParam(defaultValue = "20") int pageSize) {
+		Page<UserEntity> users = userRepository.findAll(PageRequest.of(0, pageSize, Sort.by("fullName")));
+		return new UserPage(1, pageSize, users.getTotalElements(),
 				users.getContent().stream().map(UserEntity::toResponse).toList());
 	}
 

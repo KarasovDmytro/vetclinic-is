@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -58,6 +59,23 @@ class BearerAuthenticationTest {
 		// Assert
 		response.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code", equalTo("UNAUTHORIZED")));
+	}
+
+	@Test
+	@DisplayName("AD-01: підроблений токен — 401 UNAUTHORIZED із заголовком WWW-Authenticate: Bearer")
+	void tamperedToken_returns401UnauthorizedWithBearerChallenge() throws Exception {
+		// Arrange
+		String forgedToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmb3JnZWQiLCJyb2xlIjoiQURNSU4ifQ.forged-signature";
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.header("Authorization", "Bearer " + forgedToken));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(header().string("WWW-Authenticate", equalTo("Bearer")))
+				.andExpect(jsonPath("$.code", equalTo("UNAUTHORIZED")))
+				.andExpect(jsonPath("$.message", equalTo("Потрібна автентифікація")));
 	}
 
 	private String createUser(String email, String fullName, String role, String password) throws Exception {

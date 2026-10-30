@@ -26,6 +26,9 @@ class UserController {
 	@PostMapping
 	@PreAuthorize("hasRole('ADMIN')")
 	ResponseEntity<UserResponse> createUser(@RequestBody CreateUserRequest request) {
+		if (userRepository.existsByEmail(request.email())) {
+			throw new EmailTakenException(request.email());
+		}
 		UserEntity user = new UserEntity(UUID.randomUUID(), request.email(), request.fullName(), request.role(), true,
 				OffsetDateTime.now());
 		UserResponse body = userRepository.save(user).toResponse();

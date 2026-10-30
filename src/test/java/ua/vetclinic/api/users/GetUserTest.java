@@ -1,0 +1,68 @@
+package ua.vetclinic.api.users;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import ua.vetclinic.api.TestcontainersConfiguration;
+
+/** REQ-F-001: створений обліковий запис можна отримати за ідентифікатором (операція getUser). */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
+class GetUserTest {
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Test
+	@DisplayName("REQ-F-001: адміністратор отримує створеного користувача за адресою з Location — 200 без пароля")
+	void adminGetsCreatedUserByLocation_returns200WithoutPassword() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "petrenko@clinic.example",
+				  "fullName": "Петренко Ірина Василівна",
+				  "role": "ADMIN",
+				  "password": "Admin-Passw0rd-2026"
+				}
+				""";
+		MvcResult created = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String location = created.getResponse().getHeader("Location");
+		String createdId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+
+		// Act
+		var response = mockMvc.perform(get(location)
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", equalTo(createdId)))
+				.andExpect(jsonPath("$.email", equalTo("petrenko@clinic.example")))
+				.andExpect(jsonPath("$.fullName", equalTo("Петренко Ірина Василівна")))
+				.andExpect(jsonPath("$.role", equalTo("ADMIN")))
+				.andExpect(jsonPath("$.active", equalTo(true)))
+				.andExpect(jsonPath("$.createdAt").exists())
+				.andExpect(jsonPath("$.password").doesNotExist());
+	}
+}

@@ -5,6 +5,8 @@ import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +28,7 @@ class UserController {
 
 	@PostMapping
 	@PreAuthorize("hasRole('ADMIN')")
-	ResponseEntity<UserResponse> createUser(@RequestBody CreateUserRequest request) {
+	ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
 		String email = request.email().toLowerCase(Locale.ROOT);
 		if (userRepository.existsByEmail(email)) {
 			throw new EmailTakenException(email);

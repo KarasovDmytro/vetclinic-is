@@ -1,9 +1,12 @@
 package ua.vetclinic.api.common;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -88,5 +91,21 @@ class ErrorModelTest {
 				.andExpect(jsonPath("$.timestamp", matchesPattern(OFFSET_DATE_TIME_PATTERN)))
 				.andExpect(jsonPath("$.path", equalTo(path)))
 				.andExpect(jsonPath("$.traceId", matchesPattern(UUID_PATTERN)));
+	}
+
+	@Test
+	@DisplayName("AD-18: відповідь 405 містить заголовок Allow зі списком дозволених методів")
+	void unsupportedMethod_returns405WithAllowHeader() throws Exception {
+		// Arrange
+		String userId = "c4e7a9b2-6f10-4d3a-8b55-0e1f2a3c4d5e";
+
+		// Act
+		var response = mockMvc.perform(delete("/api/v1/users/" + userId)
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()));
+
+		// Assert
+		response.andExpect(status().isMethodNotAllowed())
+				.andExpect(header().string("Allow", containsString("GET")));
 	}
 }

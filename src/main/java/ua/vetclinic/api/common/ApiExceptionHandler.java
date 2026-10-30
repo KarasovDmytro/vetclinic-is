@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import tools.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -43,6 +44,10 @@ class ApiExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException exception,
 			HttpServletRequest request) {
+		if (exception.getCause() instanceof UnrecognizedPropertyException cause && !cause.getPath().isEmpty()) {
+			return validationError(request, List.of(new ErrorDetail(cause.getPath().getLast().getPropertyName(),
+					"UNKNOWN_FIELD", "Невідоме поле")));
+		}
 		if (exception.getCause() instanceof InvalidFormatException cause && cause.getTargetType().isEnum()
 				&& !cause.getPath().isEmpty()) {
 			return validationError(request, List.of(new ErrorDetail(cause.getPath().getLast().getPropertyName(),

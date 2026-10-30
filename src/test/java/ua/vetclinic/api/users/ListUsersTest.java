@@ -60,4 +60,40 @@ class ListUsersTest {
 				.andExpect(jsonPath("$.items.length()", greaterThan(0)))
 				.andExpect(jsonPath("$.items[0].password").doesNotExist());
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: параметр pageSize обмежує розмір сторінки")
+	void adminListsUsersWithPageSize_returnsRequestedPageSize() throws Exception {
+		// Arrange
+		createUser("pavlenko@clinic.example", "Павленко Ірина Олексіївна", "VETERINARIAN");
+		createUser("rudenko@clinic.example", "Руденко Максим Сергійович", "VETERINARIAN");
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.param("pageSize", "1")
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.pageSize", equalTo(1)))
+				.andExpect(jsonPath("$.items.length()", equalTo(1)))
+				.andExpect(jsonPath("$.total", greaterThanOrEqualTo(2)));
+	}
+
+	private void createUser(String email, String fullName, String role) throws Exception {
+		String requestBody = """
+				{
+				  "email": "%s",
+				  "fullName": "%s",
+				  "role": "%s",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""".formatted(email, fullName, role);
+		mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody))
+				.andExpect(status().isCreated());
+	}
 }

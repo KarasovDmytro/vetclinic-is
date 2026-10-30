@@ -43,11 +43,12 @@
 | REQ-NF-003 | Пошук за іменем ≤ 3 с при 10 000 пацієнтів | - | - | TSK-006, TSK-005, TSK-015 | TBD | TBD | `listOwners`, `listPatients`; AD-15 |
 | REQ-NF-004 | Завантаження тижневого розкладу ≤ 2 с | - | - | TSK-010, TSK-009, TSK-015 | TBD | TBD | `getDoctorSchedule`; AD-05, AD-17 |
 | REQ-NF-005 | Атомарна транзакція: прийом + списання | - | - | TSK-014, TSK-013, TSK-015 | TBD | TBD | `createVisit`; AD-07 |
+| REQ-NF-006 | Журнал роботи (файл і консоль) та аудит входу й змін без паролів і медичних даних | - | - | TSK-002; розподілено по модулях TSK-003…TSK-014 (AD-24) | TBD | TBD | `login` і всі операції, що змінюють дані (без нових операцій OpenAPI); AD-21…AD-24 (Addendum 003) |
 
 ## Примітки
 
-- **Документація.** Значення колонки це `operationId` операцій у `spec/api/openapi.yaml` (v1.0.0), які реалізують вимогу (за розширенням `x-requirements`), та рішення адендумів, що визначають поведінку, якої немає в SRS: AD-01…AD-09 у `spec/addendum-001-api-decisions.md`, AD-10…AD-20 у `spec/addendum-002-api-contract-decisions.md`.
-- **Наскрізні вимоги.** REQ-F-004 і REQ-NF-002 діють для всіх операцій (`x-cross-cutting-requirements`), тому окремий `operationId` для них не вказується.
+- **Документація.** Значення колонки це `operationId` операцій у `spec/api/openapi.yaml` (v1.0.0), які реалізують вимогу (за розширенням `x-requirements`), та рішення адендумів, що визначають поведінку, якої немає в SRS: AD-01…AD-09 у `spec/addendum-001-api-decisions.md`, AD-10…AD-20 у `spec/addendum-002-api-contract-decisions.md`, AD-21…AD-24 у `spec/addendum-003-logging.md`.
+- **Наскрізні вимоги.** REQ-F-004 і REQ-NF-002 діють для всіх операцій (`x-cross-cutting-requirements`), тому окремий `operationId` для них не вказується. REQ-NF-006 (Addendum 003, поза SRS v1.0) також наскрізна; у OpenAPI вона не відображена, бо не змінює контракт.
 - **Вимоги без окремої операції.** REQ-F-014, REQ-F-016, REQ-F-022, REQ-F-033, REQ-F-048 і REQ-NF-001 реалізуються схемою або поведінкою (незмінний `ownerId`, відсутність `DELETE`, статус від сервера, поля `Visit`, невід'ємний залишок, пароль лише на запис) і зазначені біля відповідних операцій.
 - **Тест, Код.** Залишаються `TBD` до виконання етапів TDD (TSK-003…TSK-014).
 - **Джерело рішення про затвердження.** API-GATE: `logs/api-gate-2026-10-29.md` (GO, 2026-10-29).

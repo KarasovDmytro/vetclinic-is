@@ -1,16 +1,11 @@
 package ua.vetclinic.api.users;
 
 import java.net.URI;
-import java.time.OffsetDateTime;
-import java.util.Locale;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,48 +19,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/users")
 class UserController {
 
-	private final UserRepository userRepository;
+	private final UserService userService;
 
-	UserController(UserRepository userRepository) {
-		this.userRepository = userRepository;
+	UserController(UserService userService) {
+		this.userService = userService;
 	}
 
 	@PostMapping
 	ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-		String email = request.email().toLowerCase(Locale.ROOT);
-		if (userRepository.existsByEmail(email)) {
-			throw new EmailTakenException(email);
-		}
-		UserEntity user = new UserEntity(UUID.randomUUID(), email, request.fullName(), request.role(), true,
-				OffsetDateTime.now());
-		UserResponse body = userRepository.save(user).toResponse();
+		UserResponse body = userService.create(request);
 		return ResponseEntity.created(URI.create("/api/v1/users/" + body.id())).body(body);
 	}
 
 	@PostMapping("/{userId}/deactivate")
-	ResponseEntity<UserResponse> deactivateUser(@PathVariable UUID userId) {
-		UserEntity user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
-		if (!user.isActive()) {
-			throw new UserAlreadyDeactivatedException(userId);
-		}
-		user.deactivate();
-		return ResponseEntity.ok(userRepository.save(user).toResponse());
+	UserResponse deactivateUser(@PathVariable UUID userId) {
+		return userService.deactivate(userId);
 	}
 
 	@GetMapping
 	UserPage listUsers(@RequestParam(required = false) Role role, @RequestParam(required = false) Boolean active,
 			@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") @Max(100) int pageSize) {
-		Page<UserEntity> users = userRepository.search(role, active,
-				PageRequest.of(page - 1, pageSize, Sort.by("fullName")));
-		return new UserPage(page, pageSize, users.getTotalElements(),
-				users.getContent().stream().map(UserEntity::toResponse).toList());
+		return userService.list(role, active, page, pageSize);
 	}
 
 	@GetMapping("/{userId}")
-	ResponseEntity<UserResponse> getUser(@PathVariable UUID userId) {
-		return userRepository.findById(userId)
-				.map(UserEntity::toResponse)
-				.map(ResponseEntity::ok)
-				.orElseThrow(() -> new UserNotFoundException(userId));
+	UserResponse getUser(@PathVariable UUID userId) {
+		return userService.get(userId);
 	}
 }

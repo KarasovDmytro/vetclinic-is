@@ -19,28 +19,31 @@ class ApiExceptionHandler {
 	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
 	ResponseEntity<ErrorResponse> handleMethodNotAllowed(HttpRequestMethodNotSupportedException exception,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).headers(exception.getHeaders()).body(ErrorResponse.of(
-				HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "Метод не підтримується", request));
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).headers(exception.getHeaders())
+				.body(ErrorResponse.of(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
+						"Метод не підтримується", request));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException exception,
 			HttpServletRequest request) {
-		List<ErrorDetail> details = exception.getBindingResult().getFieldErrors().stream()
+		return validationError(request, exception.getBindingResult().getFieldErrors().stream()
 				.map(error -> new ErrorDetail(error.getField(), reasonOf(error.getCode()), error.getDefaultMessage()))
-				.toList();
-		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(ErrorResponse.of(
-				HttpStatus.UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Дані запиту некоректні", request, details));
+				.toList());
 	}
 
 	@ExceptionHandler(HandlerMethodValidationException.class)
 	ResponseEntity<ErrorResponse> handleParameterValidation(HandlerMethodValidationException exception,
 			HttpServletRequest request) {
-		List<ErrorDetail> details = exception.getParameterValidationResults().stream()
+		return validationError(request, exception.getParameterValidationResults().stream()
 				.flatMap(result -> result.getResolvableErrors().stream()
 						.map(error -> new ErrorDetail(result.getMethodParameter().getParameterName(),
 								reasonOf(constraintOf(error)), error.getDefaultMessage())))
-				.toList();
+				.toList());
+	}
+
+	private static ResponseEntity<ErrorResponse> validationError(HttpServletRequest request,
+			List<ErrorDetail> details) {
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(ErrorResponse.of(
 				HttpStatus.UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Дані запиту некоректні", request, details));
 	}

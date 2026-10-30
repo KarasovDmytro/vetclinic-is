@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 public record ErrorResponse(String code, String message, int status, OffsetDateTime timestamp, String path,
 		String traceId, @JsonInclude(JsonInclude.Include.NON_NULL) List<ErrorDetail> details) {
@@ -23,5 +24,10 @@ public record ErrorResponse(String code, String message, int status, OffsetDateT
 		return new ErrorResponse(code, message, status.value(), OffsetDateTime.now(CLINIC_ZONE),
 				request.getRequestURI(), (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTRIBUTE),
 				details);
+	}
+
+	public static ResponseEntity<ErrorResponse> entity(HttpStatus status, String code, String message,
+			HttpServletRequest request) {
+		return ResponseEntity.status(status).body(of(status, code, message, request));
 	}
 }

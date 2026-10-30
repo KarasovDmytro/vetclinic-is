@@ -13,20 +13,18 @@ class UserExceptionHandler {
 
 	@ExceptionHandler(EmailTakenException.class)
 	ResponseEntity<ErrorResponse> handleEmailTaken(EmailTakenException exception, HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(ErrorResponse.of(HttpStatus.CONFLICT, "EMAIL_TAKEN", "Email вже зайнятий", request));
+		return ErrorResponse.entity(HttpStatus.CONFLICT, "EMAIL_TAKEN", "Email вже зайнятий", request);
 	}
 
 	@ExceptionHandler(UserNotFoundException.class)
 	ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException exception, HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(ErrorResponse.of(HttpStatus.NOT_FOUND, "NOT_FOUND", "Ресурс не знайдено", request));
+		return ErrorResponse.entity(HttpStatus.NOT_FOUND, "NOT_FOUND", "Ресурс не знайдено", request);
 	}
 
 	@ExceptionHandler(UserAlreadyDeactivatedException.class)
 	ResponseEntity<ErrorResponse> handleUserAlreadyDeactivated(UserAlreadyDeactivatedException exception,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.of(HttpStatus.CONFLICT,
-				"USER_ALREADY_DEACTIVATED", "Користувача вже деактивовано", request));
+		return ErrorResponse.entity(HttpStatus.CONFLICT, "USER_ALREADY_DEACTIVATED",
+				"Користувача вже деактивовано", request);
 	}
 }

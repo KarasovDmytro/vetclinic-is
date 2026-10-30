@@ -62,4 +62,35 @@ class CreateUserTest {
 				.andExpect(jsonPath("$.createdAt").exists())
 				.andExpect(jsonPath("$.password").doesNotExist());
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: email уже використано — 409 EMAIL_TAKEN")
+	void adminCreatesUserWithTakenEmail_returns409EmailTaken() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "bondarenko@clinic.example",
+				  "fullName": "Бондаренко Наталія Сергіївна",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+		mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody))
+				.andExpect(status().isCreated());
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code", equalTo("EMAIL_TAKEN")));
+	}
 }

@@ -139,6 +139,28 @@ class LoginTest {
 				.andExpect(jsonPath("$.accessToken").doesNotExist());
 	}
 
+	@Test
+	@DisplayName("AD-01: безстанове API — вхід без CSRF-токена працює (клієнт не має сесії)")
+	void validCredentialsWithoutCsrfToken_returns200() throws Exception {
+		// Arrange
+		createUser("login.honchar@clinic.example", "Гончар Світлана Ігорівна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		String loginBody = """
+				{
+				  "email": "login.honchar@clinic.example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tokenType", equalTo("Bearer")));
+	}
+
 	private String createUser(String email, String fullName, String role, String password) throws Exception {
 		String requestBody = """
 				{

@@ -2,6 +2,7 @@ package ua.vetclinic.api.users;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -116,6 +117,25 @@ class ListUsersTest {
 				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
 				.andExpect(jsonPath("$.details[0].field", equalTo("pageSize")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("OUT_OF_RANGE")));
+	}
+
+	@Test
+	@DisplayName("REQ-F-001: фільтр role повертає лише користувачів із цією роллю")
+	void adminListsUsersFilteredByRole_returnsOnlyThatRole() throws Exception {
+		// Arrange
+		createUser("zaharchenko@clinic.example", "Захарченко Віктор Олегович", "ADMIN");
+		createUser("lysenko@clinic.example", "Лисенко Анна Миколаївна", "VETERINARIAN");
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.param("role", "ADMIN")
+				.param("pageSize", "100")
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total", greaterThanOrEqualTo(1)))
+				.andExpect(jsonPath("$.items[*].role", everyItem(equalTo("ADMIN"))));
 	}
 
 	private void createUser(String email, String fullName, String role) throws Exception {

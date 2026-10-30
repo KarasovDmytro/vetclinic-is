@@ -140,6 +140,28 @@ class LoginTest {
 	}
 
 	@Test
+	@DisplayName("AD-17: email при вході не залежить від регістру — 200")
+	void emailInDifferentCase_returns200() throws Exception {
+		// Arrange
+		createUser(mockMvc, "login.bondar@clinic.example", "Бондар Лариса Вікторівна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		String loginBody = """
+				{
+				  "email": "Login.Bondar@Clinic.Example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.user.email", equalTo("login.bondar@clinic.example")));
+	}
+
+	@Test
 	@DisplayName("AD-01: безстанове API — вхід без CSRF-токена працює (клієнт не має сесії)")
 	void validCredentialsWithoutCsrfToken_returns200() throws Exception {
 		// Arrange

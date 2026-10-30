@@ -351,6 +351,34 @@ class CreateUserTest {
 	}
 
 	@Test
+	@DisplayName("REQ-F-001: невідоме поле в тілі запиту — 422 VALIDATION_ERROR, причина UNKNOWN_FIELD (AD-18)")
+	void unknownField_returns422UnknownField() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "extra.field@clinic.example",
+				  "fullName": "Додатков Поле Іванович",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026",
+				  "active": false
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details[0].field", equalTo("active")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("UNKNOWN_FIELD")));
+	}
+
+	@Test
 	@DisplayName("REQ-F-001: невідома роль — 422 VALIDATION_ERROR, поле role, причина INVALID_ENUM (AD-18)")
 	void adminCreatesUserWithUnknownRole_returns422InvalidEnum() throws Exception {
 		// Arrange

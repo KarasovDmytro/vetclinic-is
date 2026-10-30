@@ -1,8 +1,10 @@
 package ua.vetclinic.api.users;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.DisplayName;
@@ -46,5 +48,29 @@ class UserAccessControlTest {
 
 		// Assert
 		response.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("REQ-F-004: запит без автентифікації відхиляється — 401 UNAUTHORIZED")
+	void anonymousCreatesUser_returns401Unauthorized() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "sydorenko@clinic.example",
+				  "fullName": "Сидоренко Андрій Петрович",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code", equalTo("UNAUTHORIZED")));
 	}
 }

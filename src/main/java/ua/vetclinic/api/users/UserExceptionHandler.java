@@ -1,5 +1,7 @@
 package ua.vetclinic.api.users;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -10,17 +12,21 @@ import ua.vetclinic.api.common.ErrorResponse;
 class UserExceptionHandler {
 
 	@ExceptionHandler(EmailTakenException.class)
-	ResponseEntity<ErrorResponse> handleEmailTaken(EmailTakenException exception) {
-		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("EMAIL_TAKEN"));
+	ResponseEntity<ErrorResponse> handleEmailTaken(EmailTakenException exception, HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(ErrorResponse.of(HttpStatus.CONFLICT, "EMAIL_TAKEN", "Email вже зайнятий", request));
 	}
 
 	@ExceptionHandler(UserNotFoundException.class)
-	ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException exception) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("NOT_FOUND"));
+	ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException exception, HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(ErrorResponse.of(HttpStatus.NOT_FOUND, "NOT_FOUND", "Ресурс не знайдено", request));
 	}
 
 	@ExceptionHandler(UserAlreadyDeactivatedException.class)
-	ResponseEntity<ErrorResponse> handleUserAlreadyDeactivated(UserAlreadyDeactivatedException exception) {
-		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("USER_ALREADY_DEACTIVATED"));
+	ResponseEntity<ErrorResponse> handleUserAlreadyDeactivated(UserAlreadyDeactivatedException exception,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.of(HttpStatus.CONFLICT,
+				"USER_ALREADY_DEACTIVATED", "Користувача вже деактивовано", request));
 	}
 }

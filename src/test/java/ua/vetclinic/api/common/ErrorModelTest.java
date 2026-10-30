@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,5 +68,25 @@ class ErrorModelTest {
 		// Assert
 		String traceId = JsonPath.read(result.getResponse().getContentAsString(), "$.traceId");
 		assertThat(result.getResponse().getHeader("X-Request-Id"), equalTo(traceId));
+	}
+
+	@Test
+	@DisplayName("AD-18: відповідь 401 містить WWW-Authenticate: Bearer і повну модель помилки")
+	void anonymousRequest_returns401WithBearerChallengeAndFullErrorModel() throws Exception {
+		// Arrange
+		String path = "/api/v1/users";
+
+		// Act
+		var response = mockMvc.perform(get(path));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(header().string("WWW-Authenticate", equalTo("Bearer")))
+				.andExpect(jsonPath("$.code", equalTo("UNAUTHORIZED")))
+				.andExpect(jsonPath("$.message", equalTo("Потрібна автентифікація")))
+				.andExpect(jsonPath("$.status", equalTo(401)))
+				.andExpect(jsonPath("$.timestamp", matchesPattern(OFFSET_DATE_TIME_PATTERN)))
+				.andExpect(jsonPath("$.path", equalTo(path)))
+				.andExpect(jsonPath("$.traceId", matchesPattern(UUID_PATTERN)));
 	}
 }

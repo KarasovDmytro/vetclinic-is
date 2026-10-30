@@ -78,6 +78,31 @@ class BearerAuthenticationTest {
 				.andExpect(jsonPath("$.message", equalTo("Потрібна автентифікація")));
 	}
 
+	@Test
+	@DisplayName("AD-01: безстанове API — створення користувача за bearer-токеном без CSRF-токена — 201")
+	void adminToken_createsUserWithoutCsrfToken() throws Exception {
+		// Arrange
+		createUser("bearer.csrf.admin@clinic.example", "Безстан Орест Ігорович", "ADMIN", "Admin-Passw0rd-2026");
+		String token = loginAndGetToken("bearer.csrf.admin@clinic.example", "Admin-Passw0rd-2026");
+		String requestBody = """
+				{
+				  "email": "bearer.csrf.vet@clinic.example",
+				  "fullName": "Ветеринар Оксана Ігорівна",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isCreated());
+	}
+
 	private String createUser(String email, String fullName, String role, String password) throws Exception {
 		String requestBody = """
 				{

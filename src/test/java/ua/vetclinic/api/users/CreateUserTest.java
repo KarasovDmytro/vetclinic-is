@@ -118,4 +118,29 @@ class CreateUserTest {
 		response.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.email", equalTo("melnyk.olena@clinic.example")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: пароль коротший за 8 символів — 422 VALIDATION_ERROR (AD-11)")
+	void adminCreatesUserWithTooShortPassword_returns422ValidationError() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "shevchenko@clinic.example",
+				  "fullName": "Шевченко Тарас Григорович",
+				  "role": "VETERINARIAN",
+				  "password": "Short7!"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")));
+	}
 }

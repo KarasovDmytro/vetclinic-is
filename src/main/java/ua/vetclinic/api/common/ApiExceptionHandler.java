@@ -1,5 +1,7 @@
 package ua.vetclinic.api.common;
 
+import java.util.List;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpStatus;
@@ -22,7 +24,17 @@ class ApiExceptionHandler {
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException exception,
 			HttpServletRequest request) {
+		List<ErrorDetail> details = exception.getBindingResult().getFieldErrors().stream()
+				.map(error -> new ErrorDetail(error.getField(), reasonOf(error.getCode()), error.getDefaultMessage()))
+				.toList();
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(ErrorResponse.of(
-				HttpStatus.UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Дані запиту некоректні", request));
+				HttpStatus.UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Дані запиту некоректні", request, details));
+	}
+
+	private static String reasonOf(String constraintCode) {
+		return switch (constraintCode == null ? "" : constraintCode) {
+			case "NotBlank", "NotNull" -> "REQUIRED";
+			default -> "INVALID_FORMAT";
+		};
 	}
 }

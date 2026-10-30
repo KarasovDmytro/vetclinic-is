@@ -79,4 +79,19 @@ class GetUserTest {
 		// Assert
 		response.andExpect(status().isForbidden());
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: користувача з таким id немає — 404 NOT_FOUND")
+	void adminGetsUnknownUser_returns404NotFound() throws Exception {
+		// Arrange
+		String unknownId = "00000000-0000-4000-8000-000000000404";
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users/" + unknownId)
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
+	}
 }

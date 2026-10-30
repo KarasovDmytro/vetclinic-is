@@ -11,17 +11,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ua.vetclinic.api.TestcontainersConfiguration;
+import ua.vetclinic.api.ApiIntegrationTest;
 
 /** REQ-F-004, REQ-F-005: доступ до керування обліковими записами лише в ролі ADMIN. */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@ApiIntegrationTest
 class UserAccessControlTest {
 
 	@Autowired

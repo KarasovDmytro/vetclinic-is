@@ -12,17 +12,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ua.vetclinic.api.TestcontainersConfiguration;
+import ua.vetclinic.api.ApiIntegrationTest;
 
 /** REQ-F-001: Адміністратор може створити обліковий запис із роллю Адміністратор або Лікар. */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@ApiIntegrationTest
 class CreateUserTest {
 
 	private static final String UUID_PATTERN =

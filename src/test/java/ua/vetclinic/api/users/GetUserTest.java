@@ -12,18 +12,13 @@ import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import ua.vetclinic.api.TestcontainersConfiguration;
+import ua.vetclinic.api.ApiIntegrationTest;
 
 /** REQ-F-001: створений обліковий запис можна отримати за ідентифікатором (операція getUser). */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@ApiIntegrationTest
 class GetUserTest {
 
 	@Autowired

@@ -3,6 +3,7 @@ package ua.vetclinic.api.users;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,5 +97,21 @@ class UserAccessControlTest {
 		// Assert
 		response.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code", equalTo("UNAUTHORIZED")));
+	}
+
+	@Test
+	@DisplayName("AD-09: видалення облікових записів не підтримується — 405 METHOD_NOT_ALLOWED")
+	void adminDeletesUser_returns405MethodNotAllowed() throws Exception {
+		// Arrange
+		String userId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+		// Act
+		var response = mockMvc.perform(delete("/api/v1/users/" + userId)
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()));
+
+		// Assert
+		response.andExpect(status().isMethodNotAllowed())
+				.andExpect(jsonPath("$.code", equalTo("METHOD_NOT_ALLOWED")));
 	}
 }

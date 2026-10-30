@@ -31,7 +31,8 @@ class AuthService {
 	}
 
 	LoginResponse login(LoginRequest request) {
-		UserAccount account = userAccounts.findByEmail(request.email()).orElseThrow();
+		UserAccount account = userAccounts.findByEmail(request.email())
+				.orElseThrow(InvalidCredentialsException::new);
 		if (!passwordEncoder.matches(request.password(), account.passwordHash())) {
 			throw new InvalidCredentialsException();
 		}

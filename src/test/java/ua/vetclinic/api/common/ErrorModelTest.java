@@ -155,6 +155,25 @@ class ErrorModelTest {
 	}
 
 	@Test
+	@DisplayName("AD-18: відповідь 403 FORBIDDEN містить повну модель помилки")
+	void veterinarianRequestsAdminResource_returns403WithFullErrorModel() throws Exception {
+		// Arrange
+		String path = "/api/v1/users";
+
+		// Act
+		var response = mockMvc.perform(get(path)
+				.with(user("vet").roles("VETERINARIAN")));
+
+		// Assert
+		response.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code", equalTo("FORBIDDEN")))
+				.andExpect(jsonPath("$.message", equalTo("Недостатньо прав")))
+				.andExpect(jsonPath("$.status", equalTo(403)))
+				.andExpect(jsonPath("$.path", equalTo(path)))
+				.andExpect(jsonPath("$.traceId", matchesPattern(UUID_PATTERN)));
+	}
+
+	@Test
 	@DisplayName("AD-18: ідентифікатор у шляху не є UUID — 400 MALFORMED_REQUEST")
 	void nonUuidPathVariable_returns400MalformedRequest() throws Exception {
 		// Arrange

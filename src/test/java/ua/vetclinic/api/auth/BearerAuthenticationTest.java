@@ -39,6 +39,27 @@ class BearerAuthenticationTest {
 				.andExpect(jsonPath("$.page", equalTo(1)));
 	}
 
+	@Test
+	@DisplayName("AD-01: токен деактивованого користувача перестає діяти одразу — 401 UNAUTHORIZED")
+	void tokenOfDeactivatedUser_returns401Unauthorized() throws Exception {
+		// Arrange
+		String userId = createUser("bearer.deactivated@clinic.example", "Деактивенко Ігор Романович", "ADMIN",
+				"Admin-Passw0rd-2026");
+		String token = loginAndGetToken("bearer.deactivated@clinic.example", "Admin-Passw0rd-2026");
+		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()))
+				.andExpect(status().isOk());
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.header("Authorization", "Bearer " + token));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code", equalTo("UNAUTHORIZED")));
+	}
+
 	private String createUser(String email, String fullName, String role, String password) throws Exception {
 		String requestBody = """
 				{

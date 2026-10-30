@@ -54,4 +54,8 @@ class UserEntity {
 	UserResponse toResponse() {
 		return new UserResponse(id, email, fullName, role, active, createdAt);
 	}
+
+	UserAccount toAccount() {
+		return new UserAccount(id, email, fullName, role, active, passwordHash);
+	}
 }

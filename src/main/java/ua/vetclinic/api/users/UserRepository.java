@@ -1,5 +1,6 @@
 package ua.vetclinic.api.users;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -11,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
 	boolean existsByEmail(String email);
+
+	Optional<UserEntity> findByEmail(String email);
 
 	@Query("""
 			select u from UserEntity u

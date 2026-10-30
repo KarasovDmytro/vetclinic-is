@@ -23,6 +23,7 @@ class SecurityConfig {
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
 		http.authorizeHttpRequests(requests -> requests
+				.requestMatchers("/api/v1/auth/login").permitAll()
 				.requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
 				.anyRequest().authenticated())
 				.exceptionHandling(handling -> handling.authenticationEntryPoint((request, response, exception) -> {

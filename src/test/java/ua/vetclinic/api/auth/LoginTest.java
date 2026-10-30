@@ -9,8 +9,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ua.vetclinic.api.TestAccounts.createUser;
 
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ class LoginTest {
 	@DisplayName("AD-01: вхід з вірними даними — 200, bearer-токен на 8 годин і дані користувача без пароля")
 	void validCredentials_returns200WithBearerTokenAndUser() throws Exception {
 		// Arrange
-		createUser("login.kovalchuk@clinic.example", "Ковальчук Андрій Миколайович", "VETERINARIAN", "Vet-Passw0rd-2026");
+		createUser(mockMvc, "login.kovalchuk@clinic.example", "Ковальчук Андрій Миколайович", "VETERINARIAN", "Vet-Passw0rd-2026");
 		String loginBody = """
 				{
 				  "email": "login.kovalchuk@clinic.example",
@@ -63,7 +63,7 @@ class LoginTest {
 	@DisplayName("AD-01: невірний пароль — 401 INVALID_CREDENTIALS")
 	void wrongPassword_returns401InvalidCredentials() throws Exception {
 		// Arrange
-		createUser("login.melnyk@clinic.example", "Мельник Тетяна Олексіївна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		createUser(mockMvc, "login.melnyk@clinic.example", "Мельник Тетяна Олексіївна", "VETERINARIAN", "Vet-Passw0rd-2026");
 		String loginBody = """
 				{
 				  "email": "login.melnyk@clinic.example",
@@ -113,7 +113,7 @@ class LoginTest {
 	@DisplayName("REQ-F-003: деактивований користувач із вірним паролем — 403 ACCOUNT_DEACTIVATED")
 	void deactivatedUser_returns403AccountDeactivated() throws Exception {
 		// Arrange
-		String userId = createUser("login.shevchuk@clinic.example", "Шевчук Олена Павлівна", "VETERINARIAN",
+		String userId = createUser(mockMvc, "login.shevchuk@clinic.example", "Шевчук Олена Павлівна", "VETERINARIAN",
 				"Vet-Passw0rd-2026");
 		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
 				.with(user("admin").roles("ADMIN"))
@@ -143,7 +143,7 @@ class LoginTest {
 	@DisplayName("AD-01: безстанове API — вхід без CSRF-токена працює (клієнт не має сесії)")
 	void validCredentialsWithoutCsrfToken_returns200() throws Exception {
 		// Arrange
-		createUser("login.honchar@clinic.example", "Гончар Світлана Ігорівна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		createUser(mockMvc, "login.honchar@clinic.example", "Гончар Світлана Ігорівна", "VETERINARIAN", "Vet-Passw0rd-2026");
 		String loginBody = """
 				{
 				  "email": "login.honchar@clinic.example",
@@ -159,24 +159,5 @@ class LoginTest {
 		// Assert
 		response.andExpect(status().isOk())
 				.andExpect(jsonPath("$.tokenType", equalTo("Bearer")));
-	}
-
-	private String createUser(String email, String fullName, String role, String password) throws Exception {
-		String requestBody = """
-				{
-				  "email": "%s",
-				  "fullName": "%s",
-				  "role": "%s",
-				  "password": "%s"
-				}
-				""".formatted(email, fullName, role, password);
-		var created = mockMvc.perform(post("/api/v1/users")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(requestBody))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 	}
 }

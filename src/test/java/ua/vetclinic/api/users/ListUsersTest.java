@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ua.vetclinic.api.TestAccounts.createUser;
 
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,8 +62,8 @@ class ListUsersTest {
 	@DisplayName("REQ-F-001: параметр pageSize обмежує розмір сторінки")
 	void adminListsUsersWithPageSize_returnsRequestedPageSize() throws Exception {
 		// Arrange
-		createUser("pavlenko@clinic.example", "Павленко Ірина Олексіївна", "VETERINARIAN");
-		createUser("rudenko@clinic.example", "Руденко Максим Сергійович", "VETERINARIAN");
+		createUser(mockMvc, "pavlenko@clinic.example", "Павленко Ірина Олексіївна", "VETERINARIAN");
+		createUser(mockMvc, "rudenko@clinic.example", "Руденко Максим Сергійович", "VETERINARIAN");
 
 		// Act
 		var response = mockMvc.perform(get("/api/v1/users")
@@ -81,8 +81,8 @@ class ListUsersTest {
 	@DisplayName("REQ-F-001: параметр page повертає вказану сторінку")
 	void adminListsUsersWithPage_returnsRequestedPage() throws Exception {
 		// Arrange
-		createUser("savchenko@clinic.example", "Савченко Оксана Петрівна", "VETERINARIAN");
-		createUser("tarasenko@clinic.example", "Тарасенко Богдан Ігорович", "VETERINARIAN");
+		createUser(mockMvc, "savchenko@clinic.example", "Савченко Оксана Петрівна", "VETERINARIAN");
+		createUser(mockMvc, "tarasenko@clinic.example", "Тарасенко Богдан Ігорович", "VETERINARIAN");
 
 		// Act
 		var response = mockMvc.perform(get("/api/v1/users")
@@ -119,8 +119,8 @@ class ListUsersTest {
 	@DisplayName("REQ-F-001: фільтр role повертає лише користувачів із цією роллю")
 	void adminListsUsersFilteredByRole_returnsOnlyThatRole() throws Exception {
 		// Arrange
-		createUser("zaharchenko@clinic.example", "Захарченко Віктор Олегович", "ADMIN");
-		createUser("bilyk@clinic.example", "Білик Анна Миколаївна", "VETERINARIAN");
+		createUser(mockMvc, "zaharchenko@clinic.example", "Захарченко Віктор Олегович", "ADMIN");
+		createUser(mockMvc, "bilyk@clinic.example", "Білик Анна Миколаївна", "VETERINARIAN");
 
 		// Act
 		var response = mockMvc.perform(get("/api/v1/users")
@@ -138,8 +138,9 @@ class ListUsersTest {
 	@DisplayName("REQ-F-001: фільтр active=false повертає лише деактивованих користувачів")
 	void adminListsUsersFilteredByInactive_returnsOnlyDeactivated() throws Exception {
 		// Arrange
-		createUser("moroz@clinic.example", "Мороз Діана Василівна", "VETERINARIAN");
-		String deactivatedId = createUser("kovalchuk@clinic.example", "Ковальчук Роман Іванович", "VETERINARIAN");
+		createUser(mockMvc, "moroz@clinic.example", "Мороз Діана Василівна", "VETERINARIAN");
+		String deactivatedId = createUser(mockMvc, "kovalchuk@clinic.example", "Ковальчук Роман Іванович",
+				"VETERINARIAN");
 		mockMvc.perform(post("/api/v1/users/" + deactivatedId + "/deactivate")
 				.with(user("admin").roles("ADMIN"))
 				.with(csrf()))
@@ -155,24 +156,5 @@ class ListUsersTest {
 		response.andExpect(status().isOk())
 				.andExpect(jsonPath("$.total", greaterThanOrEqualTo(1)))
 				.andExpect(jsonPath("$.items[*].active", everyItem(equalTo(false))));
-	}
-
-	private String createUser(String email, String fullName, String role) throws Exception {
-		String requestBody = """
-				{
-				  "email": "%s",
-				  "fullName": "%s",
-				  "role": "%s",
-				  "password": "Vet-Passw0rd-2026"
-				}
-				""".formatted(email, fullName, role);
-		var result = mockMvc.perform(post("/api/v1/users")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(requestBody))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
 	}
 }

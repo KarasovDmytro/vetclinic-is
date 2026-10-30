@@ -8,8 +8,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ua.vetclinic.api.TestAccounts.createUser;
+import static ua.vetclinic.api.TestAccounts.loginAndGetToken;
 
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +29,8 @@ class BearerAuthenticationTest {
 	@DisplayName("AD-01: токен адміністратора, виданий при вході, відкриває доступ до списку користувачів")
 	void adminToken_allowsListingUsers() throws Exception {
 		// Arrange
-		createUser("bearer.admin@clinic.example", "Адміненко Віра Степанівна", "ADMIN", "Admin-Passw0rd-2026");
-		String token = loginAndGetToken("bearer.admin@clinic.example", "Admin-Passw0rd-2026");
+		createUser(mockMvc, "bearer.admin@clinic.example", "Адміненко Віра Степанівна", "ADMIN", "Admin-Passw0rd-2026");
+		String token = loginAndGetToken(mockMvc, "bearer.admin@clinic.example", "Admin-Passw0rd-2026");
 
 		// Act
 		var response = mockMvc.perform(get("/api/v1/users")
@@ -44,9 +45,9 @@ class BearerAuthenticationTest {
 	@DisplayName("AD-01: токен деактивованого користувача перестає діяти одразу — 401 UNAUTHORIZED")
 	void tokenOfDeactivatedUser_returns401Unauthorized() throws Exception {
 		// Arrange
-		String userId = createUser("bearer.deactivated@clinic.example", "Деактивенко Ігор Романович", "ADMIN",
+		String userId = createUser(mockMvc, "bearer.deactivated@clinic.example", "Деактивенко Ігор Романович", "ADMIN",
 				"Admin-Passw0rd-2026");
-		String token = loginAndGetToken("bearer.deactivated@clinic.example", "Admin-Passw0rd-2026");
+		String token = loginAndGetToken(mockMvc, "bearer.deactivated@clinic.example", "Admin-Passw0rd-2026");
 		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
 				.with(user("admin").roles("ADMIN"))
 				.with(csrf()))
@@ -82,8 +83,8 @@ class BearerAuthenticationTest {
 	@DisplayName("AD-01: безстанове API — створення користувача за bearer-токеном без CSRF-токена — 201")
 	void adminToken_createsUserWithoutCsrfToken() throws Exception {
 		// Arrange
-		createUser("bearer.csrf.admin@clinic.example", "Безстан Орест Ігорович", "ADMIN", "Admin-Passw0rd-2026");
-		String token = loginAndGetToken("bearer.csrf.admin@clinic.example", "Admin-Passw0rd-2026");
+		createUser(mockMvc, "bearer.csrf.admin@clinic.example", "Безстан Орест Ігорович", "ADMIN", "Admin-Passw0rd-2026");
+		String token = loginAndGetToken(mockMvc, "bearer.csrf.admin@clinic.example", "Admin-Passw0rd-2026");
 		String requestBody = """
 				{
 				  "email": "bearer.csrf.vet@clinic.example",
@@ -101,40 +102,5 @@ class BearerAuthenticationTest {
 
 		// Assert
 		response.andExpect(status().isCreated());
-	}
-
-	private String createUser(String email, String fullName, String role, String password) throws Exception {
-		String requestBody = """
-				{
-				  "email": "%s",
-				  "fullName": "%s",
-				  "role": "%s",
-				  "password": "%s"
-				}
-				""".formatted(email, fullName, role, password);
-		var created = mockMvc.perform(post("/api/v1/users")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(requestBody))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
-	}
-
-	private String loginAndGetToken(String email, String password) throws Exception {
-		String loginBody = """
-				{
-				  "email": "%s",
-				  "password": "%s"
-				}
-				""".formatted(email, password);
-		var login = mockMvc.perform(post("/api/v1/auth/login")
-				.with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(loginBody))
-				.andExpect(status().isOk())
-				.andReturn();
-		return JsonPath.read(login.getResponse().getContentAsString(), "$.accessToken");
 	}
 }

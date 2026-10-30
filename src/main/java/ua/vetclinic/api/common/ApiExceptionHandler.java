@@ -88,6 +88,12 @@ class ApiExceptionHandler {
 				.toList());
 	}
 
+	@ExceptionHandler(RequestValidationException.class)
+	ResponseEntity<ErrorResponse> handleRequestValidation(RequestValidationException exception,
+			HttpServletRequest request) {
+		return validationError(request, exception.details());
+	}
+
 	@ExceptionHandler(EmptyBodyException.class)
 	ResponseEntity<ErrorResponse> handleEmptyBody(EmptyBodyException exception, HttpServletRequest request) {
 		return validationError(request, List.of(new ErrorDetail("body", "EMPTY_BODY", "Тіло запиту порожнє")));

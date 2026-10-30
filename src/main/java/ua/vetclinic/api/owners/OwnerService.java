@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.common.EmptyBodyException;
+import ua.vetclinic.api.common.RequestValidationException;
 
 @Service
 class OwnerService {
@@ -39,6 +40,9 @@ class OwnerService {
 	OwnerResponse update(UUID ownerId, UpdateOwnerRequest request) {
 		if (request.isEmpty()) {
 			throw new EmptyBodyException();
+		}
+		if (!request.nullRequiredFields().isEmpty()) {
+			throw new RequestValidationException(request.nullRequiredFields());
 		}
 		OwnerEntity owner = findOrThrow(ownerId);
 		owner.apply(request, OffsetDateTime.now());

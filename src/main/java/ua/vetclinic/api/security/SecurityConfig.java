@@ -2,6 +2,7 @@ package ua.vetclinic.api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -14,7 +15,9 @@ class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+		http.authorizeHttpRequests(requests -> requests
+				.requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
+				.anyRequest().authenticated())
 				.exceptionHandling(handling -> handling.authenticationEntryPoint((request, response, exception) -> {
 					response.setStatus(HttpStatus.UNAUTHORIZED.value());
 					response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -52,6 +53,9 @@ class SecurityConfig {
 				.authorizeHttpRequests(requests -> requests
 				.requestMatchers("/api/v1/auth/login").permitAll()
 				.requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
+				.requestMatchers(HttpMethod.GET, "/api/v1/owners", "/api/v1/owners/**")
+						.hasAnyRole("ADMIN", "VETERINARIAN")
+				.requestMatchers("/api/v1/owners", "/api/v1/owners/**").hasRole("ADMIN")
 				.anyRequest().authenticated())
 				.oauth2ResourceServer(resourceServer -> resourceServer
 						.authenticationEntryPoint(entryPoint)

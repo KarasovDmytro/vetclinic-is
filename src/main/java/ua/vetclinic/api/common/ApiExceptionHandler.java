@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -30,6 +31,11 @@ class ApiExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException exception,
 			HttpServletRequest request) {
+		if (exception.getCause() instanceof InvalidFormatException cause && cause.getTargetType().isEnum()
+				&& !cause.getPath().isEmpty()) {
+			return validationError(request, List.of(new ErrorDetail(cause.getPath().getLast().getPropertyName(),
+					"INVALID_ENUM", "Недопустиме значення")));
+		}
 		return ErrorResponse.entity(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Запит не вдалося розібрати",
 				request);
 	}

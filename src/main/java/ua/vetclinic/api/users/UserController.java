@@ -52,9 +52,9 @@ class UserController {
 	}
 
 	@GetMapping
-	UserPage listUsers(@RequestParam(defaultValue = "20") int pageSize) {
-		Page<UserEntity> users = userRepository.findAll(PageRequest.of(0, pageSize, Sort.by("fullName")));
-		return new UserPage(1, pageSize, users.getTotalElements(),
+	UserPage listUsers(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
+		Page<UserEntity> users = userRepository.findAll(PageRequest.of(page - 1, pageSize, Sort.by("fullName")));
+		return new UserPage(page, pageSize, users.getTotalElements(),
 				users.getContent().stream().map(UserEntity::toResponse).toList());
 	}
 

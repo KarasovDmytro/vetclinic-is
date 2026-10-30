@@ -93,4 +93,29 @@ class CreateUserTest {
 		response.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code", equalTo("EMAIL_TAKEN")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: email у відповіді зберігається в нижньому регістрі (AD-17)")
+	void adminCreatesUserWithMixedCaseEmail_returnsLowercaseEmail() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "Melnyk.Olena@Clinic.Example",
+				  "fullName": "Мельник Олена Дмитрівна",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.email", equalTo("melnyk.olena@clinic.example")));
+	}
 }

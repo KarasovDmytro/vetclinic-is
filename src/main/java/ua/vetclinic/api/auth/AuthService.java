@@ -3,6 +3,7 @@ package ua.vetclinic.api.auth;
 import java.time.Duration;
 import java.time.Instant;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -21,13 +22,19 @@ class AuthService {
 
 	private final JwtEncoder jwtEncoder;
 
-	AuthService(UserAccounts userAccounts, JwtEncoder jwtEncoder) {
+	private final PasswordEncoder passwordEncoder;
+
+	AuthService(UserAccounts userAccounts, JwtEncoder jwtEncoder, PasswordEncoder passwordEncoder) {
 		this.userAccounts = userAccounts;
 		this.jwtEncoder = jwtEncoder;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	LoginResponse login(LoginRequest request) {
 		UserAccount account = userAccounts.findByEmail(request.email()).orElseThrow();
+		if (!passwordEncoder.matches(request.password(), account.passwordHash())) {
+			throw new InvalidCredentialsException();
+		}
 		Instant issuedAt = Instant.now();
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 				.subject(account.id().toString())

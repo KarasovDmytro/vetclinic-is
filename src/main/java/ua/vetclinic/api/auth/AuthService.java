@@ -36,6 +36,9 @@ class AuthService {
 		if (!passwordEncoder.matches(request.password(), account.passwordHash())) {
 			throw new InvalidCredentialsException();
 		}
+		if (!account.active()) {
+			throw new AccountDeactivatedException();
+		}
 		Instant issuedAt = Instant.now();
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 				.subject(account.id().toString())

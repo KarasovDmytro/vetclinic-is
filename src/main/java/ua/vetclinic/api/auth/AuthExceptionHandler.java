@@ -20,4 +20,11 @@ class AuthExceptionHandler {
 		return ErrorResponse.entity(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Невірний email або пароль",
 				request);
 	}
+
+	@ExceptionHandler(AccountDeactivatedException.class)
+	ResponseEntity<ErrorResponse> handleAccountDeactivated(AccountDeactivatedException exception,
+			HttpServletRequest request) {
+		return ErrorResponse.entity(HttpStatus.FORBIDDEN, "ACCOUNT_DEACTIVATED", "Обліковий запис деактивовано",
+				request);
+	}
 }

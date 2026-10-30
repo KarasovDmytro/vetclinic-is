@@ -133,4 +133,24 @@ class ErrorModelTest {
 				.andExpect(jsonPath("$.details[0].reason", equalTo("REQUIRED")))
 				.andExpect(jsonPath("$.details[0].message").isNotEmpty());
 	}
+
+	@Test
+	@DisplayName("AD-18: зламаний JSON — 400 MALFORMED_REQUEST")
+	void malformedJson_returns400MalformedRequest() throws Exception {
+		// Arrange
+		String requestBody = "{\"email\": \"yarema@clinic.example\", \"fullName\": ";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code", equalTo("MALFORMED_REQUEST")))
+				.andExpect(jsonPath("$.message", equalTo("Запит не вдалося розібрати")))
+				.andExpect(jsonPath("$.status", equalTo(400)));
+	}
 }

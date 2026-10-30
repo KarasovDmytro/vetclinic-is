@@ -4,12 +4,14 @@ import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -31,9 +33,27 @@ class ApiExceptionHandler {
 				HttpStatus.UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Дані запиту некоректні", request, details));
 	}
 
+	@ExceptionHandler(HandlerMethodValidationException.class)
+	ResponseEntity<ErrorResponse> handleParameterValidation(HandlerMethodValidationException exception,
+			HttpServletRequest request) {
+		List<ErrorDetail> details = exception.getParameterValidationResults().stream()
+				.flatMap(result -> result.getResolvableErrors().stream()
+						.map(error -> new ErrorDetail(result.getMethodParameter().getParameterName(),
+								reasonOf(constraintOf(error)), error.getDefaultMessage())))
+				.toList();
+		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(ErrorResponse.of(
+				HttpStatus.UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Дані запиту некоректні", request, details));
+	}
+
+	private static String constraintOf(MessageSourceResolvable error) {
+		String[] codes = error.getCodes();
+		return codes == null || codes.length == 0 ? null : codes[codes.length - 1];
+	}
+
 	private static String reasonOf(String constraintCode) {
 		return switch (constraintCode == null ? "" : constraintCode) {
 			case "NotBlank", "NotNull" -> "REQUIRED";
+			case "Min", "Max" -> "OUT_OF_RANGE";
 			default -> "INVALID_FORMAT";
 		};
 	}

@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -52,7 +53,8 @@ class UserController {
 	}
 
 	@GetMapping
-	UserPage listUsers(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
+	UserPage listUsers(@RequestParam(defaultValue = "1") int page,
+			@RequestParam(defaultValue = "20") @Max(100) int pageSize) {
 		Page<UserEntity> users = userRepository.findAll(PageRequest.of(page - 1, pageSize, Sort.by("fullName")));
 		return new UserPage(page, pageSize, users.getTotalElements(),
 				users.getContent().stream().map(UserEntity::toResponse).toList());

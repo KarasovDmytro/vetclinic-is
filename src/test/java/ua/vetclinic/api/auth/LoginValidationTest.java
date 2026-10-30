@@ -132,4 +132,28 @@ class LoginValidationTest {
 				.andExpect(jsonPath("$.details[0].field", equalTo("password")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("TOO_LONG")));
 	}
+
+	@Test
+	@DisplayName("AD-18: невідоме поле в тілі запиту — 422 VALIDATION_ERROR, причина UNKNOWN_FIELD")
+	void unknownField_returns422UnknownField() throws Exception {
+		// Arrange
+		String loginBody = """
+				{
+				  "email": "login.extra@clinic.example",
+				  "password": "Vet-Passw0rd-2026",
+				  "rememberMe": true
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.details[0].field", equalTo("rememberMe")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("UNKNOWN_FIELD")));
+	}
 }

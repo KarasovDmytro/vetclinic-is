@@ -15,6 +15,8 @@ interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
 	Optional<UserEntity> findByEmail(String email);
 
+	long countByRoleAndActive(Role role, boolean active);
+
 	@Query("""
 			select u from UserEntity u
 			where (:role is null or u.role = :role)

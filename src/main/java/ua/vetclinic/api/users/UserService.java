@@ -37,6 +37,9 @@ class UserService {
 		if (!user.isActive()) {
 			throw new UserAlreadyDeactivatedException(userId);
 		}
+		if (user.isAdmin() && userRepository.countByRoleAndActive(Role.ADMIN, true) <= 1) {
+			throw new LastAdminException();
+		}
 		user.deactivate();
 		return userRepository.save(user).toResponse();
 	}

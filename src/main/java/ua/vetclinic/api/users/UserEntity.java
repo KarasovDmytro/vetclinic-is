@@ -47,6 +47,10 @@ class UserEntity {
 		return active;
 	}
 
+	boolean isAdmin() {
+		return role == Role.ADMIN;
+	}
+
 	void deactivate() {
 		this.active = false;
 	}

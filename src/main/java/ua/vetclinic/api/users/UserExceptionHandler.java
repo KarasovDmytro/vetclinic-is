@@ -30,4 +30,10 @@ class UserExceptionHandler {
 		return ErrorResponse.entity(HttpStatus.CONFLICT, "USER_ALREADY_DEACTIVATED",
 				"Користувача вже деактивовано", request);
 	}
+
+	@ExceptionHandler(LastAdminException.class)
+	ResponseEntity<ErrorResponse> handleLastAdmin(LastAdminException exception, HttpServletRequest request) {
+		return ErrorResponse.entity(HttpStatus.CONFLICT, "LAST_ADMIN",
+				"Не можна деактивувати останнього адміністратора", request);
+	}
 }

@@ -153,4 +153,20 @@ class ErrorModelTest {
 				.andExpect(jsonPath("$.message", equalTo("Запит не вдалося розібрати")))
 				.andExpect(jsonPath("$.status", equalTo(400)));
 	}
+
+	@Test
+	@DisplayName("AD-18: ідентифікатор у шляху не є UUID — 400 MALFORMED_REQUEST")
+	void nonUuidPathVariable_returns400MalformedRequest() throws Exception {
+		// Arrange
+		String userId = "not-a-uuid";
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users/" + userId)
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code", equalTo("MALFORMED_REQUEST")))
+				.andExpect(jsonPath("$.path", equalTo("/api/v1/users/" + userId)));
+	}
 }

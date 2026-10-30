@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -24,6 +25,11 @@ class UserExceptionHandler {
 	@ExceptionHandler(UserAlreadyDeactivatedException.class)
 	ResponseEntity<Map<String, String>> handleUserAlreadyDeactivated(UserAlreadyDeactivatedException exception) {
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("code", "USER_ALREADY_DEACTIVATED"));
+	}
+
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	ResponseEntity<Map<String, String>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException exception) {
+		return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of("code", "METHOD_NOT_ALLOWED"));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

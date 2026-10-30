@@ -168,4 +168,28 @@ class CreateUserTest {
 		response.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: ПІБ не вказано — 422 VALIDATION_ERROR (AD-17)")
+	void adminCreatesUserWithoutFullName_returns422ValidationError() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "oliinyk@clinic.example",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code", equalTo("VALIDATION_ERROR")));
+	}
 }

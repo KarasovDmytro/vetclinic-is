@@ -41,7 +41,7 @@ class UserController {
 
 	@PostMapping("/{userId}/deactivate")
 	ResponseEntity<UserResponse> deactivateUser(@PathVariable UUID userId) {
-		UserEntity user = userRepository.findById(userId).orElseThrow();
+		UserEntity user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
 		user.deactivate();
 		return ResponseEntity.ok(userRepository.save(user).toResponse());
 	}

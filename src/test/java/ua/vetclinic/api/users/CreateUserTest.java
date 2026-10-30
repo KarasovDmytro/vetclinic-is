@@ -322,4 +322,31 @@ class CreateUserTest {
 				.andExpect(jsonPath("$.details[0].field", equalTo("password")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("TOO_LONG")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: ПІБ довший за 150 символів — поле fullName, причина TOO_LONG (AD-17)")
+	void adminCreatesUserWithTooLongFullName_returnsTooLongReason() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "dovzhenko@clinic.example",
+				  "fullName": "%s",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""".formatted("Я".repeat(151));
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.details.length()", equalTo(1)))
+				.andExpect(jsonPath("$.details[0].field", equalTo("fullName")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("TOO_LONG")));
+	}
 }

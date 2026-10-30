@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import tools.jackson.databind.exc.InvalidFormatException;
 
 @RestControllerAdvice
@@ -36,6 +37,16 @@ class ApiExceptionHandler {
 			return validationError(request, List.of(new ErrorDetail(cause.getPath().getLast().getPropertyName(),
 					"INVALID_ENUM", "Недопустиме значення")));
 		}
+		return malformedRequest(request);
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception,
+			HttpServletRequest request) {
+		return malformedRequest(request);
+	}
+
+	private static ResponseEntity<ErrorResponse> malformedRequest(HttpServletRequest request) {
 		return ErrorResponse.entity(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Запит не вдалося розібрати",
 				request);
 	}

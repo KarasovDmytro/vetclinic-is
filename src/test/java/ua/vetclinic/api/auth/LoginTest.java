@@ -85,6 +85,29 @@ class LoginTest {
 				.andExpect(jsonPath("$.accessToken").doesNotExist());
 	}
 
+	@Test
+	@DisplayName("AD-01: невідомий email — така сама відповідь 401 INVALID_CREDENTIALS")
+	void unknownEmail_returns401InvalidCredentialsWithSameMessage() throws Exception {
+		// Arrange
+		String loginBody = """
+				{
+				  "email": "login.nobody@clinic.example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code", equalTo("INVALID_CREDENTIALS")))
+				.andExpect(jsonPath("$.message", equalTo("Невірний email або пароль")));
+	}
+
 	private void createUser(String email, String fullName, String role, String password) throws Exception {
 		String requestBody = """
 				{

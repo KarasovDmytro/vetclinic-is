@@ -75,4 +75,39 @@ class DeactivateUserTest {
 		response.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-002: повторна деактивація — 409 USER_ALREADY_DEACTIVATED")
+	void adminDeactivatesAlreadyDeactivatedUser_returns409UserAlreadyDeactivated() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "lysenko@clinic.example",
+				  "fullName": "Лисенко Дарина Олегівна",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+		MvcResult created = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String userId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()))
+				.andExpect(status().isOk());
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()));
+
+		// Assert
+		response.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code", equalTo("USER_ALREADY_DEACTIVATED")));
+	}
 }

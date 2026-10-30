@@ -295,4 +295,31 @@ class CreateUserTest {
 				.andExpect(jsonPath("$.details[0].field", equalTo("password")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("TOO_SHORT")));
 	}
+
+	@Test
+	@DisplayName("REQ-F-001: пароль довший за 72 символи — поле password, причина TOO_LONG (AD-11)")
+	void adminCreatesUserWithTooLongPassword_returnsTooLongReason() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "boiko@clinic.example",
+				  "fullName": "Бойко Михайло Тарасович",
+				  "role": "VETERINARIAN",
+				  "password": "%s"
+				}
+				""".formatted("p".repeat(73));
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody));
+
+		// Assert
+		response.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.details.length()", equalTo(1)))
+				.andExpect(jsonPath("$.details[0].field", equalTo("password")))
+				.andExpect(jsonPath("$.details[0].reason", equalTo("TOO_LONG")));
+	}
 }

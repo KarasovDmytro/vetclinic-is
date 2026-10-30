@@ -8,12 +8,23 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import tools.jackson.databind.ObjectMapper;
 import ua.vetclinic.api.common.ErrorResponse;
 
 @Configuration
 class SecurityConfig {
+
+	private static JwtAuthenticationConverter jwtAuthenticationConverter() {
+		JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
+		authorities.setAuthoritiesClaimName("role");
+		authorities.setAuthorityPrefix("ROLE_");
+		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+		converter.setJwtGrantedAuthoritiesConverter(authorities);
+		return converter;
+	}
 
 	@Bean
 	PasswordEncoder passwordEncoder() {
@@ -26,6 +37,8 @@ class SecurityConfig {
 				.requestMatchers("/api/v1/auth/login").permitAll()
 				.requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
 				.anyRequest().authenticated())
+				.oauth2ResourceServer(resourceServer -> resourceServer
+						.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
 				.exceptionHandling(handling -> handling.authenticationEntryPoint((request, response, exception) -> {
 					ErrorResponse body = ErrorResponse.of(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED",
 							"Потрібна автентифікація", request);

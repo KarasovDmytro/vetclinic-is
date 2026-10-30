@@ -2,7 +2,6 @@ package ua.vetclinic.api.common;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -15,6 +14,6 @@ public record ErrorResponse(String code, String message, int status, OffsetDateT
 
 	public static ErrorResponse of(HttpStatus status, String code, String message, HttpServletRequest request) {
 		return new ErrorResponse(code, message, status.value(), OffsetDateTime.now(CLINIC_ZONE),
-				request.getRequestURI(), UUID.randomUUID().toString());
+				request.getRequestURI(), (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTRIBUTE));
 	}
 }

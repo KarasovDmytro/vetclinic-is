@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,12 @@ class RequestIdFilter extends OncePerRequestFilter {
 		String requestId = UUID.randomUUID().toString();
 		request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
 		response.setHeader(REQUEST_ID_HEADER, requestId);
-		chain.doFilter(request, response);
+		MDC.put("requestId", requestId);
+		try {
+			chain.doFilter(request, response);
+		}
+		finally {
+			MDC.remove("requestId");
+		}
 	}
 }

@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.users.UserAccount;
 import ua.vetclinic.api.users.UserAccounts;
 
@@ -24,21 +25,33 @@ class AuthService {
 
 	private final PasswordEncoder passwordEncoder;
 
-	AuthService(UserAccounts userAccounts, JwtEncoder jwtEncoder, PasswordEncoder passwordEncoder) {
+	private final AuditLog auditLog;
+
+	AuthService(UserAccounts userAccounts, JwtEncoder jwtEncoder, PasswordEncoder passwordEncoder,
+			AuditLog auditLog) {
 		this.userAccounts = userAccounts;
 		this.jwtEncoder = jwtEncoder;
 		this.passwordEncoder = passwordEncoder;
+		this.auditLog = auditLog;
 	}
 
 	LoginResponse login(LoginRequest request) {
-		UserAccount account = userAccounts.findByEmail(request.email())
-				.orElseThrow(InvalidCredentialsException::new);
+		UserAccount account = userAccounts.findByEmail(request.email()).orElse(null);
+		if (account == null) {
+			auditLog.failure("LOGIN_FAILED", null, null, "USER", null, "INVALID_CREDENTIALS");
+			throw new InvalidCredentialsException();
+		}
 		if (!passwordEncoder.matches(request.password(), account.passwordHash())) {
+			auditLog.failure("LOGIN_FAILED", account.id(), account.role().name(), "USER", account.id(),
+					"INVALID_CREDENTIALS");
 			throw new InvalidCredentialsException();
 		}
 		if (!account.active()) {
+			auditLog.failure("LOGIN_FAILED", account.id(), account.role().name(), "USER", account.id(),
+					"ACCOUNT_DEACTIVATED");
 			throw new AccountDeactivatedException();
 		}
+		auditLog.success("LOGIN_SUCCESS", account.id(), account.role().name(), "USER", account.id());
 		Instant issuedAt = Instant.now();
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 				.subject(account.id().toString())

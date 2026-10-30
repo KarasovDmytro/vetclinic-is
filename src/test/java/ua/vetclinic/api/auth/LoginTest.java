@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,7 +109,37 @@ class LoginTest {
 				.andExpect(jsonPath("$.message", equalTo("Невірний email або пароль")));
 	}
 
-	private void createUser(String email, String fullName, String role, String password) throws Exception {
+	@Test
+	@DisplayName("REQ-F-003: деактивований користувач із вірним паролем — 403 ACCOUNT_DEACTIVATED")
+	void deactivatedUser_returns403AccountDeactivated() throws Exception {
+		// Arrange
+		String userId = createUser("login.shevchuk@clinic.example", "Шевчук Олена Павлівна", "VETERINARIAN",
+				"Vet-Passw0rd-2026");
+		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()))
+				.andExpect(status().isOk());
+		String loginBody = """
+				{
+				  "email": "login.shevchuk@clinic.example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code", equalTo("ACCOUNT_DEACTIVATED")))
+				.andExpect(jsonPath("$.message", equalTo("Обліковий запис деактивовано")))
+				.andExpect(jsonPath("$.accessToken").doesNotExist());
+	}
+
+	private String createUser(String email, String fullName, String role, String password) throws Exception {
 		String requestBody = """
 				{
 				  "email": "%s",
@@ -117,11 +148,13 @@ class LoginTest {
 				  "password": "%s"
 				}
 				""".formatted(email, fullName, role, password);
-		mockMvc.perform(post("/api/v1/users")
+		var created = mockMvc.perform(post("/api/v1/users")
 				.with(user("admin").roles("ADMIN"))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(requestBody))
-				.andExpect(status().isCreated());
+				.andExpect(status().isCreated())
+				.andReturn();
+		return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 	}
 }

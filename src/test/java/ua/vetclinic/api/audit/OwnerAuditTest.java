@@ -3,9 +3,12 @@ package ua.vetclinic.api.audit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -111,5 +114,22 @@ class OwnerAuditTest {
 				containsString("requestId=" + result.getResponse().getHeader("X-Request-Id")))));
 		assertThat(audit.lines(), everyItem(not(containsString("Секретне"))));
 		assertThat(audit.lines(), everyItem(not(containsString("+380502020202"))));
+	}
+
+	@Test
+	@DisplayName("REQ-NF-006, AD-22.1: читання власника і списку не фіксується в журналі аудиту")
+	void readingOwners_isNotAudited() throws Exception {
+		// Arrange
+		String ownerId = createOwner(mockMvc, "Лише Читання Власник", "+380503030303");
+		int linesBefore = audit.lines().size();
+
+		// Act
+		mockMvc.perform(get("/api/v1/owners/" + ownerId).with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/api/v1/owners").param("q", "Лише Читання").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk());
+
+		// Assert
+		assertThat(audit.lines().size(), equalTo(linesBefore));
 	}
 }

@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -46,7 +47,9 @@ class SecurityConfig {
 		};
 		AccessDeniedHandler accessDeniedHandler = (request, response, exception) -> writeError(objectMapper,
 				response, ErrorResponse.of(HttpStatus.FORBIDDEN, "FORBIDDEN", "Недостатньо прав", request));
-		http.authorizeHttpRequests(requests -> requests
+		http.csrf(csrf -> csrf.disable())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(requests -> requests
 				.requestMatchers("/api/v1/auth/login").permitAll()
 				.requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
 				.anyRequest().authenticated())

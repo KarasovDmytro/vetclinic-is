@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import ua.vetclinic.api.audit.AuditLog;
 
 @Service
 class UserService {
@@ -17,19 +18,25 @@ class UserService {
 
 	private final PasswordEncoder passwordEncoder;
 
-	UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	private final AuditLog auditLog;
+
+	UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuditLog auditLog) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
+		this.auditLog = auditLog;
 	}
 
 	UserResponse create(CreateUserRequest request) {
 		String email = request.email().toLowerCase(Locale.ROOT);
 		if (userRepository.existsByEmail(email)) {
+			auditLog.failure("USER_CREATED", "USER", null, "EMAIL_TAKEN");
 			throw new EmailTakenException(email);
 		}
 		UserEntity user = new UserEntity(UUID.randomUUID(), email, request.fullName(),
 				passwordEncoder.encode(request.password()), request.role(), true, OffsetDateTime.now());
-		return userRepository.save(user).toResponse();
+		UserResponse created = userRepository.save(user).toResponse();
+		auditLog.success("USER_CREATED", "USER", created.id());
+		return created;
 	}
 
 	UserResponse deactivate(UUID userId) {
@@ -41,7 +48,9 @@ class UserService {
 			throw new LastAdminException();
 		}
 		user.deactivate();
-		return userRepository.save(user).toResponse();
+		UserResponse deactivated = userRepository.save(user).toResponse();
+		auditLog.success("USER_DEACTIVATED", "USER", userId);
+		return deactivated;
 	}
 
 	UserResponse get(UUID userId) {

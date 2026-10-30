@@ -80,6 +80,26 @@ class ListUsersTest {
 				.andExpect(jsonPath("$.total", greaterThanOrEqualTo(2)));
 	}
 
+	@Test
+	@DisplayName("REQ-F-001: параметр page повертає вказану сторінку")
+	void adminListsUsersWithPage_returnsRequestedPage() throws Exception {
+		// Arrange
+		createUser("savchenko@clinic.example", "Савченко Оксана Петрівна", "VETERINARIAN");
+		createUser("tarasenko@clinic.example", "Тарасенко Богдан Ігорович", "VETERINARIAN");
+
+		// Act
+		var response = mockMvc.perform(get("/api/v1/users")
+				.param("page", "2")
+				.param("pageSize", "1")
+				.with(user("admin").roles("ADMIN")));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.page", equalTo(2)))
+				.andExpect(jsonPath("$.pageSize", equalTo(1)))
+				.andExpect(jsonPath("$.items.length()", equalTo(1)));
+	}
+
 	private void createUser(String email, String fullName, String role) throws Exception {
 		String requestBody = """
 				{

@@ -20,6 +20,8 @@ class UserEntity {
 
 	private String fullName;
 
+	private String passwordHash;
+
 	@Enumerated(EnumType.STRING)
 	private Role role;
 
@@ -30,10 +32,12 @@ class UserEntity {
 	protected UserEntity() {
 	}
 
-	UserEntity(UUID id, String email, String fullName, Role role, boolean active, OffsetDateTime createdAt) {
+	UserEntity(UUID id, String email, String fullName, String passwordHash, Role role, boolean active,
+			OffsetDateTime createdAt) {
 		this.id = id;
 		this.email = email;
 		this.fullName = fullName;
+		this.passwordHash = passwordHash;
 		this.role = role;
 		this.active = active;
 		this.createdAt = createdAt;

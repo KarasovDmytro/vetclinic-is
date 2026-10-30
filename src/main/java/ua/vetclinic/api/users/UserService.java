@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,8 +15,11 @@ class UserService {
 
 	private final UserRepository userRepository;
 
-	UserService(UserRepository userRepository) {
+	private final PasswordEncoder passwordEncoder;
+
+	UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
 		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	UserResponse create(CreateUserRequest request) {
@@ -23,8 +27,8 @@ class UserService {
 		if (userRepository.existsByEmail(email)) {
 			throw new EmailTakenException(email);
 		}
-		UserEntity user = new UserEntity(UUID.randomUUID(), email, request.fullName(), request.role(), true,
-				OffsetDateTime.now());
+		UserEntity user = new UserEntity(UUID.randomUUID(), email, request.fullName(),
+				passwordEncoder.encode(request.password()), request.role(), true, OffsetDateTime.now());
 		return userRepository.save(user).toResponse();
 	}
 

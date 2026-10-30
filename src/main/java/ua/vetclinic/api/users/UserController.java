@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +24,7 @@ class UserController {
 	}
 
 	@PostMapping
+	@PreAuthorize("hasRole('ADMIN')")
 	ResponseEntity<UserResponse> createUser(@RequestBody CreateUserRequest request) {
 		UserEntity user = new UserEntity(UUID.randomUUID(), request.email(), request.fullName(), request.role(), true,
 				OffsetDateTime.now());

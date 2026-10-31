@@ -24,6 +24,8 @@ import static ua.vetclinic.api.TestVisits.Doctor;
 import static ua.vetclinic.api.TestVisits.createVisit;
 import static ua.vetclinic.api.TestVisits.newDoctor;
 import static ua.vetclinic.api.TestVisits.postVisit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +35,10 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 
 /** REQ-F-027, REQ-F-032, REQ-F-033, AD-07, AD-14: збереження результатів прийому (операція createVisit). */
 @ApiIntegrationTest
@@ -429,8 +435,8 @@ class CreateVisitTest {
 	@DisplayName("AD-07.1: паралельні прийоми для одного запису — рівно один 201 і решта 409 APPOINTMENT_NOT_SCHEDULED")
 	void concurrentVisitsForOneAppointment_createExactlyOne() throws Exception {
 		// Arrange
-		var executor = java.util.concurrent.Executors.newFixedThreadPool(6);
-		java.util.List<java.util.concurrent.Callable<Integer>> calls = new java.util.ArrayList<>();
+		var executor = Executors.newFixedThreadPool(6);
+		List<Callable<Integer>> calls = new ArrayList<>();
 		for (int i = 0; i < 6; i++) {
 			calls.add(() -> postVisit(mockMvc, doctor, appointmentId, "{ \"diagnosis\": \"Паралельно\" }").andReturn()
 					.getResponse().getStatus());
@@ -447,8 +453,8 @@ class CreateVisitTest {
 			created += result.get() == 201 ? 1 : 0;
 			conflicts += result.get() == 409 ? 1 : 0;
 		}
-		org.hamcrest.MatcherAssert.assertThat(created, equalTo(1));
-		org.hamcrest.MatcherAssert.assertThat(conflicts, equalTo(5));
+		assertThat(created, equalTo(1));
+		assertThat(conflicts, equalTo(5));
 	}
 
 	@Test
@@ -458,8 +464,7 @@ class CreateVisitTest {
 		String visitId = createVisit(mockMvc, doctor, appointmentId);
 
 		// Act
-		var response = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-				.delete("/api/v1/visits/" + visitId).header("Authorization", doctor.bearer()));
+		var response = mockMvc.perform(delete("/api/v1/visits/" + visitId).header("Authorization", doctor.bearer()));
 
 		// Assert
 		response.andExpect(status().isMethodNotAllowed())

@@ -63,7 +63,7 @@ class UserService {
 
 	UserPage list(Role role, Boolean active, int page, int pageSize) {
 		Page<UserEntity> users = userRepository.search(role, active,
-				PageRequest.of(page - 1, pageSize, Sort.by("fullName")));
+				PageRequest.of(page - 1, pageSize, Sort.by("fullName", "id")));
 		return new UserPage(page, pageSize, users.getTotalElements(),
 				users.getContent().stream().map(UserEntity::toResponse).toList());
 	}

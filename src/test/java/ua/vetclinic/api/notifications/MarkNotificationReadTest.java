@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
+import org.springframework.test.web.servlet.ResultActions;
 
 /** REQ-F-047, AD-16.2, AD-20.2: позначення сповіщення прочитаним (операція markNotificationRead). */
 @ApiIntegrationTest
@@ -42,7 +43,7 @@ class MarkNotificationReadTest {
 		notificationId = (String) notificationsOf(mockMvc, medicationId).get(0).get("id");
 	}
 
-	private org.springframework.test.web.servlet.ResultActions markAsAdmin(String id) throws Exception {
+	private ResultActions markAsAdmin(String id) throws Exception {
 		return mockMvc.perform(post("/api/v1/notifications/" + id + "/mark-read").with(user("admin").roles("ADMIN")));
 	}
 

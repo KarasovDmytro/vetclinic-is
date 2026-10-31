@@ -18,6 +18,7 @@ import static ua.vetclinic.api.TestNotifications.notificationsOf;
 import static ua.vetclinic.api.TestNotifications.withdraw;
 import static ua.vetclinic.api.TestVisits.Doctor;
 import static ua.vetclinic.api.TestVisits.newDoctor;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -120,8 +121,7 @@ class NotificationAuditTest {
 
 		// Act
 		mockMvc.perform(get("/api/v1/notifications")
-				.with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
-						.user("admin").roles("ADMIN")))
+				.with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk());
 
 		// Assert

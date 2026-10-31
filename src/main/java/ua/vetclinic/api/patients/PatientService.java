@@ -105,7 +105,7 @@ class PatientService {
 			filter = filter.and((root, q, cb) -> cb.equal(root.get("status"), status));
 		}
 		Page<PatientEntity> patients = patientRepository.findAll(filter,
-				PageRequest.of(page - 1, pageSize, Sort.by("name")));
+				PageRequest.of(page - 1, pageSize, Sort.by("name", "id")));
 		return new PatientPage(page, pageSize, patients.getTotalElements(),
 				patients.getContent().stream().map(PatientEntity::toResponse).toList());
 	}

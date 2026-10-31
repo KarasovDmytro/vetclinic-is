@@ -15,6 +15,7 @@ import static ua.vetclinic.api.TestMedications.uniqueName;
 import static ua.vetclinic.api.TestVisits.Doctor;
 import static ua.vetclinic.api.TestVisits.newDoctor;
 import static ua.vetclinic.api.TestVisits.visitBodyWith;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -504,8 +505,7 @@ class CreateVisitValidationTest {
 	@DisplayName("AD-18.2: тіло запиту відсутнє — 400 MALFORMED_REQUEST")
 	void missingBody_returns400() throws Exception {
 		// Arrange
-		var request = org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-				.post("/api/v1/appointments/" + appointmentId + "/visit")
+		var request = post("/api/v1/appointments/" + appointmentId + "/visit")
 				.header("Authorization", doctor.bearer())
 				.contentType(MediaType.APPLICATION_JSON);
 

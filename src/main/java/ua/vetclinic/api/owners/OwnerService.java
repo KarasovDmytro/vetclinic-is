@@ -58,7 +58,7 @@ class OwnerService {
 	}
 
 	OwnerPage list(String query, int page, int pageSize) {
-		Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("fullName"));
+		Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("fullName", "id"));
 		Page<OwnerEntity> owners = query == null ? ownerRepository.findAll(pageable)
 				: ownerRepository.findByFullNameContainingIgnoreCase(query, pageable);
 		return new OwnerPage(page, pageSize, owners.getTotalElements(),

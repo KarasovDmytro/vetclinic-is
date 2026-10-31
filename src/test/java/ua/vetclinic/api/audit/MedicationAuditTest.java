@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import ua.vetclinic.api.ApiIntegrationTest;
 import ua.vetclinic.api.LogCapture;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /** REQ-NF-006, AD-22, AD-24.2: зміни каталогу медикаментів фіксуються в журналі аудиту без зайвих даних. */
 @ApiIntegrationTest
@@ -54,7 +55,7 @@ class MedicationAuditTest {
 		audit.stop();
 	}
 
-	private ResultActions asAdmin(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request,
+	private ResultActions asAdmin(MockHttpServletRequestBuilder request,
 			String body) throws Exception {
 		return mockMvc.perform(request.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON).content(body));

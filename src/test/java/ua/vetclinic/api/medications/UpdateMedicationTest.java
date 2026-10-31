@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static ua.vetclinic.api.TestMedications.createMedication;
 import static ua.vetclinic.api.TestMedications.quantityOf;
 import static ua.vetclinic.api.TestMedications.uniqueName;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
@@ -116,8 +118,7 @@ class UpdateMedicationTest {
 	void update_refreshesUpdatedAtOnly() throws Exception {
 		// Arrange
 		String medicationId = createMedication(mockMvc, uniqueName("Час редагування"), 1, null);
-		String before = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-				.get("/api/v1/medications/" + medicationId).with(user("admin").roles("ADMIN")))
+		String before = mockMvc.perform(get("/api/v1/medications/" + medicationId).with(user("admin").roles("ADMIN")))
 				.andReturn().getResponse().getContentAsString();
 
 		// Act
@@ -125,9 +126,9 @@ class UpdateMedicationTest {
 				.andReturn().getResponse().getContentAsString();
 
 		// Assert
-		org.hamcrest.MatcherAssert.assertThat((String) JsonPath.read(after, "$.createdAt"),
+		assertThat((String) JsonPath.read(after, "$.createdAt"),
 				equalTo(JsonPath.read(before, "$.createdAt")));
-		org.hamcrest.MatcherAssert.assertThat((String) JsonPath.read(after, "$.updatedAt"),
+		assertThat((String) JsonPath.read(after, "$.updatedAt"),
 				not(equalTo((String) JsonPath.read(before, "$.updatedAt"))));
 	}
 
@@ -191,7 +192,7 @@ class UpdateMedicationTest {
 		response.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.details[0].field", equalTo("quantity")))
 				.andExpect(jsonPath("$.details[0].reason", equalTo("IMMUTABLE_FIELD")));
-		org.hamcrest.MatcherAssert.assertThat(quantityOf(mockMvc, medicationId), equalTo(10));
+		assertThat(quantityOf(mockMvc, medicationId), equalTo(10));
 	}
 
 	@Test

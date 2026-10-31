@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
+import com.jayway.jsonpath.JsonPath;
 
 /** REQ-F-045, REQ-F-046, REQ-F-048, REQ-NF-005, AD-18.7: списання медикаментів під час збереження прийому. */
 @ApiIntegrationTest
@@ -56,7 +57,7 @@ class CreateVisitStockTest {
 		var body = mockMvc.perform(get("/api/v1/patients/" + patientId + "/visits")
 				.header("Authorization", doctor.bearer()))
 				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-		return com.jayway.jsonpath.JsonPath.read(body, "$.total");
+		return JsonPath.read(body, "$.total");
 	}
 
 	@Test

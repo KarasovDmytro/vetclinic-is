@@ -17,6 +17,7 @@ import static ua.vetclinic.api.TestVisits.Doctor;
 import static ua.vetclinic.api.TestVisits.createVisit;
 import static ua.vetclinic.api.TestVisits.newDoctor;
 import static ua.vetclinic.api.TestVisits.visitBodyWith;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
+import org.springframework.http.MediaType;
 
 /** REQ-F-030, REQ-F-031, REQ-F-033, REQ-F-034: перегляд прийому (операція getVisit). */
 @ApiIntegrationTest
@@ -167,10 +169,9 @@ class GetVisitTest {
 	@DisplayName("AD-07.5: перейменування препарату після прийому не змінює записаний у прийомі перелік")
 	void renamedMedication_doesNotRewriteHistory() throws Exception {
 		// Arrange
-		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-				.patch("/api/v1/medications/" + medicationId)
+		mockMvc.perform(patch("/api/v1/medications/" + medicationId)
 				.with(user("admin").roles("ADMIN"))
-				.contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
 				.content("{ \"name\": \"" + uniqueName("Нова назва після прийому") + "\" }"))
 				.andExpect(status().isOk());
 

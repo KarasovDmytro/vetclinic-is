@@ -161,7 +161,7 @@ class AppointmentService {
 			filter = filter.and((root, q, cb) -> cb.lessThan(root.get("startsAt"), rangeEnd));
 		}
 		Page<AppointmentEntity> appointments = appointmentRepository.findAll(filter,
-				PageRequest.of(page - 1, pageSize, Sort.by("startsAt")));
+				PageRequest.of(page - 1, pageSize, Sort.by("startsAt", "id")));
 		return new AppointmentPage(page, pageSize, appointments.getTotalElements(),
 				appointments.getContent().stream().map(AppointmentEntity::toResponse).toList());
 	}

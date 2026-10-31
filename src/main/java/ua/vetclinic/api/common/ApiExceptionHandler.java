@@ -97,7 +97,13 @@ class ApiExceptionHandler {
 
 	@ExceptionHandler(ConflictException.class)
 	ResponseEntity<ErrorResponse> handleConflict(ConflictException exception, HttpServletRequest request) {
-		return ErrorResponse.entity(HttpStatus.CONFLICT, exception.code(), exception.userMessage(), request);
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.of(HttpStatus.CONFLICT,
+				exception.code(), exception.userMessage(), request, exception.details()));
+	}
+
+	@ExceptionHandler(ForbiddenException.class)
+	ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException exception, HttpServletRequest request) {
+		return ErrorResponse.entity(HttpStatus.FORBIDDEN, exception.code(), exception.userMessage(), request);
 	}
 
 	@ExceptionHandler(MissingServletRequestParameterException.class)

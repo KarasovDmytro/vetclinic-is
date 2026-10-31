@@ -56,6 +56,9 @@ class SecurityConfig {
 				.requestMatchers(HttpMethod.GET, "/api/v1/owners", "/api/v1/owners/**")
 						.hasAnyRole("ADMIN", "VETERINARIAN")
 				.requestMatchers("/api/v1/owners", "/api/v1/owners/**").hasRole("ADMIN")
+				.requestMatchers(HttpMethod.GET, "/api/v1/patients", "/api/v1/patients/*")
+						.hasAnyRole("ADMIN", "VETERINARIAN")
+				.requestMatchers("/api/v1/patients", "/api/v1/patients/**").hasRole("ADMIN")
 				.anyRequest().authenticated())
 				.oauth2ResourceServer(resourceServer -> resourceServer
 						.authenticationEntryPoint(entryPoint)

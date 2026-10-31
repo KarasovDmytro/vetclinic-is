@@ -1,0 +1,50 @@
+types {
+  text/plain yaml;
+  text/plain yml;
+}
+
+gzip on;
+gzip_static on;
+gzip_disable "msie6";
+
+gzip_vary on;
+gzip_types text/plain text/css application/javascript;
+
+map $request_method $access_control_max_age {
+  OPTIONS 1728000;
+}
+server_tokens off;
+
+server {
+  listen            $PORT;
+  server_name       localhost;
+  index             index.html index.htm;
+
+  # Контракт описує сервер як /api/v1 (відносний шлях), тому запити "Try it out"
+  # йдуть на цей самий origin; проксуємо їх на застосунок на хості, щоб не потрібен був CORS.
+  location /api/ {
+    proxy_pass http://host.docker.internal:8080;
+    proxy_set_header Host $http_host;
+  }
+
+  location $BASE_URL {
+    absolute_redirect off;
+    alias            /usr/share/nginx/html/;
+    expires 1d;
+
+    location ~ swagger-initializer.js {
+      expires -1;
+      include templates/cors.conf;
+    }
+
+    location ~* \.(?:json|yml|yaml)$ {
+      #SWAGGER_ROOT
+      expires -1;
+
+      include templates/cors.conf;
+    }
+
+    include templates/cors.conf;
+    include templates/embedding.conf;
+  }
+}

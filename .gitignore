@@ -34,3 +34,6 @@ build/
 
 ### Application logs ###
 var/
+
+### Local environment ###
+.env

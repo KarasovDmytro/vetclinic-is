@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.common.ClinicZone;
 import ua.vetclinic.api.common.EmptyBodyException;
 import ua.vetclinic.api.common.ErrorDetail;
@@ -25,9 +26,12 @@ class PatientService {
 
 	private final OwnerLookup ownerLookup;
 
-	PatientService(PatientRepository patientRepository, OwnerLookup ownerLookup) {
+	private final AuditLog auditLog;
+
+	PatientService(PatientRepository patientRepository, OwnerLookup ownerLookup, AuditLog auditLog) {
 		this.patientRepository = patientRepository;
 		this.ownerLookup = ownerLookup;
+		this.auditLog = auditLog;
 	}
 
 	PatientResponse create(CreatePatientRequest request) {
@@ -36,12 +40,14 @@ class PatientService {
 			errors.add(new ErrorDetail("ownerId", "REFERENCE_NOT_FOUND", "Власника не знайдено"));
 		}
 		addFutureBirthDateError(errors, request.birthDate());
-		throwIfAny(errors);
+		rejectIfAny(errors, "PATIENT_CREATED", null);
 		OffsetDateTime now = OffsetDateTime.now();
 		PatientEntity patient = new PatientEntity(UUID.randomUUID(), request.ownerId(), request.name(),
 				request.species(), request.breed(), request.sex(), request.birthDate(), PatientStatus.ACTIVE, now,
 				now);
-		return patientRepository.save(patient).toResponse();
+		PatientResponse created = patientRepository.save(patient).toResponse();
+		auditLog.success("PATIENT_CREATED", "PATIENT", created.id());
+		return created;
 	}
 
 	PatientResponse get(UUID patientId) {
@@ -50,23 +56,29 @@ class PatientService {
 
 	PatientResponse update(UUID patientId, UpdatePatientRequest request) {
 		if (request.isEmpty()) {
+			auditLog.failure("PATIENT_UPDATED", "PATIENT", patientId, "VALIDATION_ERROR");
 			throw new EmptyBodyException();
 		}
 		List<ErrorDetail> errors = new ArrayList<>(request.violations());
 		addFutureBirthDateError(errors, request.birthDate());
-		throwIfAny(errors);
+		rejectIfAny(errors, "PATIENT_UPDATED", patientId);
 		PatientEntity patient = findOrThrow(patientId);
 		patient.apply(request, OffsetDateTime.now());
-		return patientRepository.save(patient).toResponse();
+		PatientResponse updated = patientRepository.save(patient).toResponse();
+		auditLog.success("PATIENT_UPDATED", "PATIENT", patientId);
+		return updated;
 	}
 
 	PatientResponse archive(UUID patientId) {
 		PatientEntity patient = findOrThrow(patientId);
 		if (patient.isArchived()) {
+			auditLog.failure("PATIENT_ARCHIVED", "PATIENT", patientId, "PATIENT_ARCHIVED");
 			throw new PatientArchivedException(patientId);
 		}
 		patient.archive(OffsetDateTime.now());
-		return patientRepository.save(patient).toResponse();
+		PatientResponse archived = patientRepository.save(patient).toResponse();
+		auditLog.success("PATIENT_ARCHIVED", "PATIENT", patientId);
+		return archived;
 	}
 
 	PatientPage list(String query, UUID ownerId, PatientStatus status, int page, int pageSize) {
@@ -101,8 +113,9 @@ class PatientService {
 		}
 	}
 
-	private static void throwIfAny(List<ErrorDetail> errors) {
+	private void rejectIfAny(List<ErrorDetail> errors, String event, UUID entityId) {
 		if (!errors.isEmpty()) {
+			auditLog.failure(event, "PATIENT", entityId, "VALIDATION_ERROR");
 			throw new RequestValidationException(errors);
 		}
 	}

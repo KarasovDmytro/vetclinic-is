@@ -18,6 +18,12 @@
    BOOTSTRAP_ADMIN_PASSWORD='змініть-мене-8+символів' ./mvnw spring-boot:run
    ```
 
+   Те саме у Windows cmd:
+
+   ```bat
+   set "BOOTSTRAP_ADMIN_PASSWORD=змініть-мене-8+символів" && mvnw.cmd spring-boot:run
+   ```
+
    API доступний на `http://localhost:8080/api/v1`, вхід: `POST /auth/login` з `admin@clinic.example` та вказаним паролем. Журнали пишуться в консоль і в `var/log/`.
 
 ### Налаштування середовища

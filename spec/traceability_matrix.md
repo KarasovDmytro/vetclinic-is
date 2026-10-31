@@ -15,14 +15,15 @@
 | REQ-F-015 | Переведення медичної картки пацієнта в статус «Архівна» | - | - | TSK-006, TSK-005, TSK-015 | TBD | TBD | `archivePatient`; AD-04, AD-16 |
 | REQ-F-016 | Заборона фізичного видалення картки | є | - | TSK-006, TSK-005, TSK-015 | TBD | TBD | `getPatient`, `archivePatient`; AD-09, AD-18 |
 | REQ-F-017 | Пошук власників та пацієнтів за іменем | - | - | TSK-006, TSK-005, TSK-015 | TBD | TBD | `listOwners`, `listPatients`; AD-15 |
-| REQ-F-020 | Розклад у вигляді сітки зі слотами по 30 хвилин | - | - | TSK-010, TSK-009, TSK-015 | TBD | TBD | `listDoctors`, `getDoctorSchedule`, `listAppointments`; AD-05, AD-17, AD-20 |
-| REQ-F-021 | Створення запису на прийом адміністратором | - | - | TSK-002, TSK-010, TSK-009, TSK-015 | TBD | TBD | `listDoctors`, `createAppointment`, `getAppointment`; AD-04, AD-05, AD-17 |
+| REQ-F-020 | Розклад у вигляді сітки зі слотами по 30 хвилин | - | - | TSK-010, TSK-009, TSK-015 | TBD | TBD | `listDoctors`, `getDoctorSchedule`, `listAppointments`; AD-05, AD-17, AD-20, AD-25 |
+| REQ-F-021 | Створення запису на прийом адміністратором | - | - | TSK-002, TSK-010, TSK-009, TSK-015 | TBD | TBD | `listDoctors`, `createAppointment`, `getAppointment`; AD-04, AD-05, AD-17, AD-25 |
 | REQ-F-022 | Автоматичний статус «Заплановано» при створенні запису | - | - | TSK-010, TSK-009, TSK-015 | TBD | TBD | `createAppointment`; AD-19 |
 | REQ-F-023 | Блокування конфлікту розкладу | є | є | TSK-002, TSK-010, TSK-009, TSK-015 | TBD | TBD | `createAppointment`, `rescheduleAppointment`; AD-03, AD-18 |
-| REQ-F-024 | Перенесення запису на інший вільний слот | - | - | TSK-002, TSK-010, TSK-009, TSK-015 | TBD | TBD | `rescheduleAppointment`; AD-03, AD-20 |
+| REQ-F-024 | Перенесення запису на інший вільний слот | - | - | TSK-002, TSK-010, TSK-009, TSK-015 | TBD | TBD | `rescheduleAppointment`; AD-03, AD-20, AD-25 |
 | REQ-F-025 | Адміністратор може скасувати запис | - | - | TSK-002, TSK-010, TSK-009, TSK-015 | TBD | TBD | `cancelAppointment`; AD-03, AD-16, AD-20 |
 | REQ-F-026 | Лікар лише переглядає розклад, не змінює записи | - | - | TSK-010, TSK-009, TSK-015 | TBD | TBD | `getDoctorSchedule`, `listAppointments`, `rescheduleAppointment`, `cancelAppointment`; AD-06 |
 | REQ-F-027 | Автоматичний статус «Завершено» при збереженні прийому | - | - | TSK-012, TSK-011, TSK-015 | TBD | TBD | `createVisit`; AD-07, AD-19 |
+| REQ-F-049 | Заборона створення й перенесення запису на вихідний день клініки (субота, неділя) | є | є | TSK-002, TSK-010, TSK-009, TSK-015 | TBD | TBD | `createAppointment`, `rescheduleAppointment`, `getDoctorSchedule`; AD-25 (Addendum 004) |
 | REQ-F-030 | Лікар бачить картки всіх пацієнтів клініки | - | - | TSK-012, TSK-011, TSK-015 | TBD | TBD | `listPatientVisits`, `getVisit`; AD-06 |
 | REQ-F-031 | Адміністратор не має доступу до медичних карток | - | - | TSK-012, TSK-011, TSK-015 | TBD | TBD | `listPatientVisits`, `createVisit`, `getVisit`, `updateVisit`; AD-18 |
 | REQ-F-032 | Лікар фіксує результати прийому (діагноз, призначення, нотатки) | - | - | TSK-012, TSK-011, TSK-015 | TBD | TBD | `createVisit`, `updateVisit`; AD-07, AD-12 |
@@ -47,7 +48,7 @@
 
 ## Примітки
 
-- **Документація.** Значення колонки це `operationId` операцій у `spec/api/openapi.yaml` (v1.0.0), які реалізують вимогу (за розширенням `x-requirements`), та рішення адендумів, що визначають поведінку, якої немає в SRS: AD-01…AD-09 у `spec/addendum-001-api-decisions.md`, AD-10…AD-20 у `spec/addendum-002-api-contract-decisions.md`, AD-21…AD-24 у `spec/addendum-003-logging.md`.
+- **Документація.** Значення колонки це `operationId` операцій у `spec/api/openapi.yaml` (v1.0.0), які реалізують вимогу (за розширенням `x-requirements`), та рішення адендумів, що визначають поведінку, якої немає в SRS: AD-01…AD-09 у `spec/addendum-001-api-decisions.md`, AD-10…AD-20 у `spec/addendum-002-api-contract-decisions.md`, AD-21…AD-24 у `spec/addendum-003-logging.md`, AD-25 у `spec/addendum-004-non-working-days.md`.
 - **Наскрізні вимоги.** REQ-F-004 і REQ-NF-002 діють для всіх операцій (`x-cross-cutting-requirements`), тому окремий `operationId` для них не вказується. REQ-NF-006 (Addendum 003, поза SRS v1.0) також наскрізна; у OpenAPI вона не відображена, бо не змінює контракт.
 - **Вимоги без окремої операції.** REQ-F-014, REQ-F-016, REQ-F-022, REQ-F-033, REQ-F-048 і REQ-NF-001 реалізуються схемою або поведінкою (незмінний `ownerId`, відсутність `DELETE`, статус від сервера, поля `Visit`, невід'ємний залишок, пароль лише на запис) і зазначені біля відповідних операцій.
 - **Тест, Код.** Залишаються `TBD` до виконання етапів TDD (TSK-003…TSK-014).

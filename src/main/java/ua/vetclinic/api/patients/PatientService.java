@@ -4,8 +4,13 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ua.vetclinic.api.common.ClinicZone;
 import ua.vetclinic.api.common.EmptyBodyException;
@@ -64,8 +69,30 @@ class PatientService {
 		return patientRepository.save(patient).toResponse();
 	}
 
+	PatientPage list(String query, UUID ownerId, PatientStatus status, int page, int pageSize) {
+		Specification<PatientEntity> filter = Specification.unrestricted();
+		if (query != null) {
+			String pattern = "%" + escapeLike(query.toLowerCase(Locale.ROOT)) + "%";
+			filter = filter.and((root, q, cb) -> cb.like(cb.lower(root.get("name")), pattern, '\\'));
+		}
+		if (ownerId != null) {
+			filter = filter.and((root, q, cb) -> cb.equal(root.get("ownerId"), ownerId));
+		}
+		if (status != null) {
+			filter = filter.and((root, q, cb) -> cb.equal(root.get("status"), status));
+		}
+		Page<PatientEntity> patients = patientRepository.findAll(filter,
+				PageRequest.of(page - 1, pageSize, Sort.by("name")));
+		return new PatientPage(page, pageSize, patients.getTotalElements(),
+				patients.getContent().stream().map(PatientEntity::toResponse).toList());
+	}
+
 	private PatientEntity findOrThrow(UUID patientId) {
 		return patientRepository.findById(patientId).orElseThrow(() -> new PatientNotFoundException(patientId));
+	}
+
+	private static String escapeLike(String value) {
+		return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
 	}
 
 	private static void addFutureBirthDateError(List<ErrorDetail> errors, LocalDate birthDate) {

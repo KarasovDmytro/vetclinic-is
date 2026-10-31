@@ -147,8 +147,8 @@ class DoctorScheduleTest {
 	}
 
 	@Test
-	@DisplayName("AD-17.5: діапазон із семи днів допустимий — 126 слотів, відсортованих за часом зростання")
-	void sevenDayRange_returns126SortedSlots() throws Exception {
+	@DisplayName("AD-17.5, AD-25.6: діапазон із семи днів допустимий — 90 слотів п'яти робочих днів, відсортованих за часом зростання")
+	void sevenDayRange_returns90SortedSlots() throws Exception {
 		// Arrange
 		String doctorId = createDoctor(mockMvc, "Розклад Тиждень");
 
@@ -158,9 +158,9 @@ class DoctorScheduleTest {
 
 		// Assert
 		List<String> starts = JsonPath.read(body, "$.slots[*].startsAt");
-		assertThat(starts, hasSize(126));
+		assertThat(starts, hasSize(90));
 		assertThat(starts.get(0), equalTo(slot("2026-12-07", "09:00")));
-		assertThat(starts.get(125), equalTo(slot("2026-12-13", "17:30")));
+		assertThat(starts.get(89), equalTo(slot("2026-12-11", "17:30")));
 		List<String> sorted = starts.stream().sorted().toList();
 		assertThat(starts, equalTo(sorted));
 	}

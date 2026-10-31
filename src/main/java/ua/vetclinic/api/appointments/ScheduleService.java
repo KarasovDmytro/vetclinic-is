@@ -3,11 +3,13 @@ package ua.vetclinic.api.appointments;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -45,10 +47,10 @@ class ScheduleService {
 					List.of(new ErrorDetail("to", "RANGE_TOO_LARGE", "Діапазон більший за 7 днів")));
 		}
 		doctors.find(doctorId).orElseThrow(() -> new ResourceNotFoundException("Doctor not found: " + doctorId));
-		Map<Instant, SlotAppointment> occupied = occupiedSlots(doctorId, from, to);
+		NavigableMap<Instant, SlotAppointment> occupied = occupiedSlots(doctorId, from, to);
 		List<SlotResponse> slots = new ArrayList<>();
 		for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-			ClinicSchedule.slotStartsOf(day).forEach(start -> {
+			slotStartsOf(day, occupied).forEach(start -> {
 				SlotAppointment appointment = occupied.get(start.toInstant());
 				slots.add(new SlotResponse(start.toOffsetDateTime(),
 						start.plus(ClinicSchedule.SLOT).toOffsetDateTime(),
@@ -58,13 +60,24 @@ class ScheduleService {
 		return new ScheduleResponse(doctorId, from, to, (int) ClinicSchedule.SLOT.toMinutes(), slots);
 	}
 
-	private Map<Instant, SlotAppointment> occupiedSlots(UUID doctorId, LocalDate from, LocalDate to) {
+	/** У робочий день усі слоти сітки, у вихідний лише ті, що зайняті записами, які вже там стоять (AD-25.6-7). */
+	private static List<ZonedDateTime> slotStartsOf(LocalDate day, NavigableMap<Instant, SlotAppointment> occupied) {
+		if (ClinicSchedule.isWorkingDay(day)) {
+			return ClinicSchedule.slotStartsOf(day);
+		}
+		Instant dayStart = day.atStartOfDay(ClinicZone.ZONE).toInstant();
+		Instant nextDayStart = day.plusDays(1).atStartOfDay(ClinicZone.ZONE).toInstant();
+		return occupied.subMap(dayStart, true, nextDayStart, false).keySet().stream()
+				.map(start -> start.atZone(ClinicZone.ZONE)).toList();
+	}
+
+	private NavigableMap<Instant, SlotAppointment> occupiedSlots(UUID doctorId, LocalDate from, LocalDate to) {
 		OffsetDateTime rangeStart = from.atStartOfDay(ClinicZone.ZONE).toOffsetDateTime();
 		OffsetDateTime rangeEnd = to.plusDays(1).atStartOfDay(ClinicZone.ZONE).toOffsetDateTime();
 		List<AppointmentEntity> appointments = appointmentRepository.findInRange(doctorId, rangeStart, rangeEnd,
 				AppointmentService.OCCUPYING);
 		Map<UUID, String> names = patients.namesOf(appointments.stream().map(AppointmentEntity::patientId).toList());
-		Map<Instant, SlotAppointment> occupied = new HashMap<>();
+		NavigableMap<Instant, SlotAppointment> occupied = new TreeMap<>();
 		for (AppointmentEntity appointment : appointments) {
 			occupied.put(appointment.startsAt().toInstant(), new SlotAppointment(appointment.id(),
 					appointment.patientId(), names.get(appointment.patientId()), appointment.status()));

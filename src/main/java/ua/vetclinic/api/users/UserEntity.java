@@ -51,6 +51,14 @@ class UserEntity {
 		return role == Role.ADMIN;
 	}
 
+	boolean isVeterinarian() {
+		return role == Role.VETERINARIAN;
+	}
+
+	DoctorInfo toDoctorInfo() {
+		return new DoctorInfo(id, fullName, active);
+	}
+
 	void deactivate() {
 		this.active = false;
 	}

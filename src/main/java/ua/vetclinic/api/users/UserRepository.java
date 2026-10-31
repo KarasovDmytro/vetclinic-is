@@ -1,5 +1,6 @@
 package ua.vetclinic.api.users;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,6 +17,8 @@ interface UserRepository extends JpaRepository<UserEntity, UUID> {
 	Optional<UserEntity> findByEmail(String email);
 
 	long countByRoleAndActive(Role role, boolean active);
+
+	List<UserEntity> findByRoleAndActiveTrueOrderByFullName(Role role);
 
 	@Query("""
 			select u from UserEntity u

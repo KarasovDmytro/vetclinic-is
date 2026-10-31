@@ -13,6 +13,7 @@ import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.common.EmptyBodyException;
 import ua.vetclinic.api.common.ErrorDetail;
 import ua.vetclinic.api.common.RequestValidationException;
+import ua.vetclinic.api.common.ResourceNotFoundException;
 
 @Service
 class OwnerService {
@@ -63,6 +64,6 @@ class OwnerService {
 	}
 
 	private OwnerEntity findOrThrow(UUID ownerId) {
-		return ownerRepository.findById(ownerId).orElseThrow(() -> new OwnerNotFoundException(ownerId));
+		return ownerRepository.findById(ownerId).orElseThrow(() -> new ResourceNotFoundException("Owner not found: " + ownerId));
 	}
 }

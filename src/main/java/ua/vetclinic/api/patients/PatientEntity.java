@@ -58,6 +58,10 @@ class PatientEntity {
 		return new PatientResponse(id, ownerId, name, species, breed, sex, birthDate, status, createdAt, updatedAt);
 	}
 
+	PatientInfo toInfo() {
+		return new PatientInfo(id, name, isArchived());
+	}
+
 	boolean isArchived() {
 		return status == PatientStatus.ARCHIVED;
 	}

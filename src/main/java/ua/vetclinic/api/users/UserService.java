@@ -10,6 +10,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ua.vetclinic.api.audit.AuditLog;
+import ua.vetclinic.api.common.ConflictException;
+import ua.vetclinic.api.common.ResourceNotFoundException;
 
 @Service
 class UserService {
@@ -30,7 +32,7 @@ class UserService {
 		String email = request.email().toLowerCase(Locale.ROOT);
 		if (userRepository.existsByEmail(email)) {
 			auditLog.failure("USER_CREATED", "USER", null, "EMAIL_TAKEN");
-			throw new EmailTakenException(email);
+			throw new ConflictException("EMAIL_TAKEN", "Email вже зайнятий");
 		}
 		UserEntity user = new UserEntity(UUID.randomUUID(), email, request.fullName(),
 				passwordEncoder.encode(request.password()), request.role(), true, OffsetDateTime.now());
@@ -42,10 +44,10 @@ class UserService {
 	UserResponse deactivate(UUID userId) {
 		UserEntity user = findOrThrow(userId);
 		if (!user.isActive()) {
-			throw new UserAlreadyDeactivatedException(userId);
+			throw new ConflictException("USER_ALREADY_DEACTIVATED", "Користувача вже деактивовано");
 		}
 		if (user.isAdmin() && userRepository.countByRoleAndActive(Role.ADMIN, true) <= 1) {
-			throw new LastAdminException();
+			throw new ConflictException("LAST_ADMIN", "Не можна деактивувати останнього адміністратора");
 		}
 		user.deactivate();
 		UserResponse deactivated = userRepository.save(user).toResponse();
@@ -65,6 +67,6 @@ class UserService {
 	}
 
 	private UserEntity findOrThrow(UUID userId) {
-		return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+		return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 	}
 }

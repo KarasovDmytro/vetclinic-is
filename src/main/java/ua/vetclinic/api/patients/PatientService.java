@@ -14,9 +14,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.common.ClinicZone;
+import ua.vetclinic.api.common.ConflictException;
 import ua.vetclinic.api.common.EmptyBodyException;
 import ua.vetclinic.api.common.ErrorDetail;
 import ua.vetclinic.api.common.RequestValidationException;
+import ua.vetclinic.api.common.ResourceNotFoundException;
 import ua.vetclinic.api.owners.OwnerLookup;
 
 @Service
@@ -28,10 +30,14 @@ class PatientService {
 
 	private final AuditLog auditLog;
 
-	PatientService(PatientRepository patientRepository, OwnerLookup ownerLookup, AuditLog auditLog) {
+	private final List<PatientArchiveGuard> archiveGuards;
+
+	PatientService(PatientRepository patientRepository, OwnerLookup ownerLookup, AuditLog auditLog,
+			List<PatientArchiveGuard> archiveGuards) {
 		this.patientRepository = patientRepository;
 		this.ownerLookup = ownerLookup;
 		this.auditLog = auditLog;
+		this.archiveGuards = archiveGuards;
 	}
 
 	PatientResponse create(CreatePatientRequest request) {
@@ -73,7 +79,11 @@ class PatientService {
 		PatientEntity patient = findOrThrow(patientId);
 		if (patient.isArchived()) {
 			auditLog.failure("PATIENT_ARCHIVED", "PATIENT", patientId, "PATIENT_ARCHIVED");
-			throw new PatientArchivedException(patientId);
+			throw new ConflictException("PATIENT_ARCHIVED", "Картку пацієнта архівовано");
+		}
+		if (archiveGuards.stream().anyMatch(guard -> guard.hasScheduledAppointments(patientId))) {
+			auditLog.failure("PATIENT_ARCHIVED", "PATIENT", patientId, "PATIENT_HAS_SCHEDULED_APPOINTMENTS");
+			throw new ConflictException("PATIENT_HAS_SCHEDULED_APPOINTMENTS", "У пацієнта є заплановані записи");
 		}
 		patient.archive(OffsetDateTime.now());
 		PatientResponse archived = patientRepository.save(patient).toResponse();
@@ -100,7 +110,7 @@ class PatientService {
 	}
 
 	private PatientEntity findOrThrow(UUID patientId) {
-		return patientRepository.findById(patientId).orElseThrow(() -> new PatientNotFoundException(patientId));
+		return patientRepository.findById(patientId).orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + patientId));
 	}
 
 	private static String escapeLike(String value) {

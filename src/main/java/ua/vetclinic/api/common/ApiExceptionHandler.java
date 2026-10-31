@@ -16,6 +16,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -86,6 +87,24 @@ class ApiExceptionHandler {
 										() -> result.unwrap(error, ConstraintViolation.class)),
 								error.getDefaultMessage())))
 				.toList());
+	}
+
+	@ExceptionHandler(ResourceNotFoundException.class)
+	ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException exception,
+			HttpServletRequest request) {
+		return ErrorResponse.entity(HttpStatus.NOT_FOUND, "NOT_FOUND", "Ресурс не знайдено", request);
+	}
+
+	@ExceptionHandler(ConflictException.class)
+	ResponseEntity<ErrorResponse> handleConflict(ConflictException exception, HttpServletRequest request) {
+		return ErrorResponse.entity(HttpStatus.CONFLICT, exception.code(), exception.userMessage(), request);
+	}
+
+	@ExceptionHandler(MissingServletRequestParameterException.class)
+	ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException exception,
+			HttpServletRequest request) {
+		return validationError(request,
+				List.of(new ErrorDetail(exception.getParameterName(), "REQUIRED", "Параметр обов'язковий")));
 	}
 
 	@ExceptionHandler(RequestValidationException.class)

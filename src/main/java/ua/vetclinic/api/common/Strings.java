@@ -9,4 +9,9 @@ public final class Strings {
 	public static String strip(String value) {
 		return value == null ? null : value.strip();
 	}
+
+	/** Екранує спецсимволи шаблону LIKE (символ екранування — зворотна скісна риска). */
+	public static String escapeLike(String value) {
+		return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+	}
 }

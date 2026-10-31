@@ -19,6 +19,7 @@ import ua.vetclinic.api.common.EmptyBodyException;
 import ua.vetclinic.api.common.ErrorDetail;
 import ua.vetclinic.api.common.RequestValidationException;
 import ua.vetclinic.api.common.ResourceNotFoundException;
+import ua.vetclinic.api.common.Strings;
 import ua.vetclinic.api.owners.OwnerLookup;
 
 @Service
@@ -94,7 +95,7 @@ class PatientService {
 	PatientPage list(String query, UUID ownerId, PatientStatus status, int page, int pageSize) {
 		Specification<PatientEntity> filter = Specification.unrestricted();
 		if (query != null) {
-			String pattern = "%" + escapeLike(query.toLowerCase(Locale.ROOT)) + "%";
+			String pattern = "%" + Strings.escapeLike(query.toLowerCase(Locale.ROOT)) + "%";
 			filter = filter.and((root, q, cb) -> cb.like(cb.lower(root.get("name")), pattern, '\\'));
 		}
 		if (ownerId != null) {
@@ -111,10 +112,6 @@ class PatientService {
 
 	private PatientEntity findOrThrow(UUID patientId) {
 		return patientRepository.findById(patientId).orElseThrow(() -> new ResourceNotFoundException("Patient not found: " + patientId));
-	}
-
-	private static String escapeLike(String value) {
-		return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
 	}
 
 	private static void addFutureBirthDateError(List<ErrorDetail> errors, LocalDate birthDate) {

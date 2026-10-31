@@ -1,5 +1,7 @@
 package ua.vetclinic.api.medications;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,4 +22,11 @@ interface MedicationRepository extends JpaRepository<MedicationEntity, UUID>, Jp
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select m from MedicationEntity m where m.id = :id")
 	Optional<MedicationEntity> findByIdForUpdate(@Param("id") UUID id);
+
+	@Query("select m.id from MedicationEntity m where m.id in :ids")
+	List<UUID> findExistingIds(@Param("ids") Collection<UUID> ids);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select m from MedicationEntity m where m.id in :ids order by m.id")
+	List<MedicationEntity> findAllForUpdate(@Param("ids") Collection<UUID> ids);
 }

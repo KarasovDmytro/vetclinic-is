@@ -36,6 +36,18 @@ class MedicationEntity {
 		this.updatedAt = now;
 	}
 
+	UUID id() {
+		return id;
+	}
+
+	String name() {
+		return name;
+	}
+
+	Integer minThreshold() {
+		return minThreshold;
+	}
+
 	int quantity() {
 		return quantity;
 	}

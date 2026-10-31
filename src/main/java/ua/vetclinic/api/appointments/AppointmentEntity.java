@@ -65,6 +65,16 @@ class AppointmentEntity {
 		this.updatedAt = now;
 	}
 
+	void complete(UUID visitId, OffsetDateTime now) {
+		this.status = AppointmentStatus.COMPLETED;
+		this.visitId = visitId;
+		this.updatedAt = now;
+	}
+
+	AppointmentInfo toInfo() {
+		return new AppointmentInfo(id, doctorId, patientId, startsAt, isScheduled());
+	}
+
 	void reschedule(OffsetDateTime newStartsAt, OffsetDateTime newEndsAt, OffsetDateTime now) {
 		this.startsAt = newStartsAt;
 		this.endsAt = newEndsAt;

@@ -58,6 +58,15 @@ class PatientEntity {
 		return new PatientResponse(id, ownerId, name, species, breed, sex, birthDate, status, createdAt, updatedAt);
 	}
 
+	boolean isArchived() {
+		return status == PatientStatus.ARCHIVED;
+	}
+
+	void archive(OffsetDateTime now) {
+		this.status = PatientStatus.ARCHIVED;
+		this.updatedAt = now;
+	}
+
 	void apply(UpdatePatientRequest changes, OffsetDateTime now) {
 		if (changes.isProvided("name")) {
 			this.name = changes.name();

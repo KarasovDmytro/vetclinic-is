@@ -19,4 +19,10 @@ class PatientExceptionHandler {
 			HttpServletRequest request) {
 		return ErrorResponse.entity(HttpStatus.NOT_FOUND, "NOT_FOUND", "Ресурс не знайдено", request);
 	}
+
+	@ExceptionHandler(PatientArchivedException.class)
+	ResponseEntity<ErrorResponse> handlePatientArchived(PatientArchivedException exception,
+			HttpServletRequest request) {
+		return ErrorResponse.entity(HttpStatus.CONFLICT, "PATIENT_ARCHIVED", "Картку пацієнта архівовано", request);
+	}
 }

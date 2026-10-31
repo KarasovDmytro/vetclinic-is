@@ -35,6 +35,11 @@ class PatientController {
 		return patientService.get(patientId);
 	}
 
+	@PostMapping("/{patientId}/archive")
+	PatientResponse archivePatient(@PathVariable UUID patientId) {
+		return patientService.archive(patientId);
+	}
+
 	@PatchMapping("/{patientId}")
 	PatientResponse updatePatient(@PathVariable UUID patientId, @Valid @RequestBody UpdatePatientRequest request) {
 		return patientService.update(patientId, request);

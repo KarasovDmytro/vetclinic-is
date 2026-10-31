@@ -55,6 +55,15 @@ class PatientService {
 		return patientRepository.save(patient).toResponse();
 	}
 
+	PatientResponse archive(UUID patientId) {
+		PatientEntity patient = findOrThrow(patientId);
+		if (patient.isArchived()) {
+			throw new PatientArchivedException(patientId);
+		}
+		patient.archive(OffsetDateTime.now());
+		return patientRepository.save(patient).toResponse();
+	}
+
 	private PatientEntity findOrThrow(UUID patientId) {
 		return patientRepository.findById(patientId).orElseThrow(() -> new PatientNotFoundException(patientId));
 	}

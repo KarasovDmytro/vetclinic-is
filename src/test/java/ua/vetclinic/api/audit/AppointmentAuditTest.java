@@ -76,7 +76,7 @@ class AppointmentAuditTest {
 	@DisplayName("REQ-NF-006: створення запису — подія APPOINTMENT_CREATED з виконавцем і сутністю, без імені пацієнта")
 	void createAppointment_isAudited() throws Exception {
 		// Arrange
-		String startsAt = slot("2026-12-19", "10:00");
+		String startsAt = slot("2026-12-21", "10:00");
 
 		// Act
 		var result = create(startsAt, patientId).andExpect(status().isCreated()).andReturn();
@@ -98,10 +98,10 @@ class AppointmentAuditTest {
 	@DisplayName("AD-22.4: зайнятий слот (409) — APPOINTMENT_CREATED з outcome=FAILURE і errorCode SLOT_TAKEN")
 	void slotTaken_isAuditedAsFailure() throws Exception {
 		// Arrange
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "11:00"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "11:00"));
 
 		// Act
-		create(slot("2026-12-19", "11:00"), patientId).andExpect(status().isConflict());
+		create(slot("2026-12-21", "11:00"), patientId).andExpect(status().isConflict());
 
 		// Assert
 		assertThat(audit.lines(), hasItem(allOf(
@@ -120,7 +120,7 @@ class AppointmentAuditTest {
 				.header("Authorization", "Bearer " + adminToken)).andExpect(status().isOk());
 
 		// Act
-		create(slot("2026-12-19", "12:00"), archivedPatient).andExpect(status().isConflict());
+		create(slot("2026-12-21", "12:00"), archivedPatient).andExpect(status().isConflict());
 
 		// Assert
 		assertThat(audit.lines(), hasItem(allOf(
@@ -133,7 +133,7 @@ class AppointmentAuditTest {
 	@DisplayName("AD-22.4: незбіг слота (422) — APPOINTMENT_CREATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
 	void misalignedSlot_isAuditedAsFailure() throws Exception {
 		// Arrange
-		String startsAt = slot("2026-12-19", "12:10");
+		String startsAt = slot("2026-12-21", "12:10");
 
 		// Act
 		create(startsAt, patientId).andExpect(status().isUnprocessableContent());
@@ -149,13 +149,13 @@ class AppointmentAuditTest {
 	@DisplayName("REQ-NF-006: перенесення запису — подія APPOINTMENT_RESCHEDULED з виконавцем і сутністю")
 	void rescheduleAppointment_isAudited() throws Exception {
 		// Arrange
-		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "13:00"));
+		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "13:00"));
 
 		// Act
 		var result = mockMvc.perform(patch("/api/v1/appointments/" + appointmentId)
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{ \"startsAt\": \"" + slot("2026-12-19", "14:00") + "\" }"))
+				.content("{ \"startsAt\": \"" + slot("2026-12-21", "14:00") + "\" }"))
 				.andExpect(status().isOk()).andReturn();
 
 		// Assert
@@ -172,15 +172,15 @@ class AppointmentAuditTest {
 	@DisplayName("AD-22.4: перенесення на зайнятий слот (409) — APPOINTMENT_RESCHEDULED з outcome=FAILURE і errorCode SLOT_TAKEN")
 	void rescheduleToTakenSlot_isAuditedAsFailure() throws Exception {
 		// Arrange
-		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "15:00"));
+		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "15:00"));
 		String otherPatient = createPatientWithOwner(mockMvc, "Аудит Перенесення Інший Пацієнт");
-		createAppointment(mockMvc, doctorId, otherPatient, slot("2026-12-19", "16:00"));
+		createAppointment(mockMvc, doctorId, otherPatient, slot("2026-12-21", "16:00"));
 
 		// Act
 		mockMvc.perform(patch("/api/v1/appointments/" + appointmentId)
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{ \"startsAt\": \"" + slot("2026-12-19", "16:00") + "\" }"))
+				.content("{ \"startsAt\": \"" + slot("2026-12-21", "16:00") + "\" }"))
 				.andExpect(status().isConflict());
 
 		// Assert
@@ -195,7 +195,7 @@ class AppointmentAuditTest {
 	@DisplayName("REQ-NF-006: скасування запису — подія APPOINTMENT_CANCELLED з виконавцем і сутністю")
 	void cancelAppointment_isAudited() throws Exception {
 		// Arrange
-		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "09:00"));
+		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "09:00"));
 
 		// Act
 		var result = mockMvc.perform(post("/api/v1/appointments/" + appointmentId + "/cancel")
@@ -216,7 +216,7 @@ class AppointmentAuditTest {
 	@DisplayName("AD-22.4: повторне скасування (409) — APPOINTMENT_CANCELLED з outcome=FAILURE і errorCode APPOINTMENT_NOT_SCHEDULED")
 	void cancelTwice_isAuditedAsFailure() throws Exception {
 		// Arrange
-		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "09:30"));
+		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "09:30"));
 		cancelAppointment(mockMvc, appointmentId);
 
 		// Act
@@ -235,7 +235,7 @@ class AppointmentAuditTest {
 	@DisplayName("AD-22.4: архівація пацієнта із запланованим записом (409) — PATIENT_ARCHIVED з outcome=FAILURE")
 	void archiveWithScheduledAppointment_isAuditedAsFailure() throws Exception {
 		// Arrange
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "10:30"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "10:30"));
 
 		// Act
 		mockMvc.perform(post("/api/v1/patients/" + patientId + "/archive")
@@ -253,12 +253,12 @@ class AppointmentAuditTest {
 	@DisplayName("REQ-NF-006, AD-22.1: читання розкладу, списку й запису не фіксується в журналі аудиту")
 	void readingSchedule_isNotAudited() throws Exception {
 		// Arrange
-		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "17:00"));
+		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "17:00"));
 		int linesBefore = audit.lines().size();
 
 		// Act
-		mockMvc.perform(get("/api/v1/doctors/" + doctorId + "/schedule").param("from", "2026-12-19")
-				.param("to", "2026-12-19").header("Authorization", "Bearer " + adminToken)).andExpect(status().isOk());
+		mockMvc.perform(get("/api/v1/doctors/" + doctorId + "/schedule").param("from", "2026-12-21")
+				.param("to", "2026-12-21").header("Authorization", "Bearer " + adminToken)).andExpect(status().isOk());
 		mockMvc.perform(get("/api/v1/appointments").param("doctorId", doctorId)
 				.header("Authorization", "Bearer " + adminToken)).andExpect(status().isOk());
 		mockMvc.perform(get("/api/v1/appointments/" + appointmentId)

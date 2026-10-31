@@ -70,8 +70,8 @@ class ListPatientVisitsTest {
 	@DisplayName("AD-14: сортування за часом слота, а не за часом збереження — прийоми одного дня впорядковані за годиною")
 	void sameDayVisits_areOrderedByStartTime() throws Exception {
 		// Arrange
-		String afternoon = visitOn(patientId, "2026-11-14", "15:00");
-		String morning = visitOn(patientId, "2026-11-14", "09:00");
+		String afternoon = visitOn(patientId, "2026-11-09", "15:00");
+		String morning = visitOn(patientId, "2026-11-09", "09:00");
 
 		// Act
 		var response = mockMvc.perform(history(patientId));
@@ -85,7 +85,7 @@ class ListPatientVisitsTest {
 	@DisplayName("REQ-F-034: елемент хронології має ті самі поля, що й прийом, разом із переліком препаратів")
 	void item_hasVisitFields() throws Exception {
 		// Arrange
-		String visitId = visitOn(patientId, "2026-11-15", "10:00");
+		String visitId = visitOn(patientId, "2026-11-10", "10:00");
 
 		// Act
 		var response = mockMvc.perform(history(patientId));
@@ -95,7 +95,7 @@ class ListPatientVisitsTest {
 				.andExpect(jsonPath("$.items[0].id", equalTo(visitId)))
 				.andExpect(jsonPath("$.items[0].patientId", equalTo(patientId)))
 				.andExpect(jsonPath("$.items[0].doctorId", equalTo(doctor.id())))
-				.andExpect(jsonPath("$.items[0].visitDate", equalTo(slot("2026-11-15", "10:00"))))
+				.andExpect(jsonPath("$.items[0].visitDate", equalTo(slot("2026-11-10", "10:00"))))
 				.andExpect(jsonPath("$.items[0].diagnosis", equalTo("Бактеріальна інфекція")))
 				.andExpect(jsonPath("$.items[0].medications", hasSize(0)));
 	}
@@ -271,11 +271,11 @@ class ListPatientVisitsTest {
 	@DisplayName("AD-19.2: пагінація — друга сторінка по 2 елементи містить третій і четвертий за спаданням дати")
 	void paging_returnsRequestedPage() throws Exception {
 		// Arrange
-		visitOn(patientId, "2026-11-21", "10:00");
-		String fourth = visitOn(patientId, "2026-11-22", "10:00");
-		String third = visitOn(patientId, "2026-11-23", "10:00");
-		visitOn(patientId, "2026-11-24", "10:00");
-		visitOn(patientId, "2026-11-25", "10:00");
+		visitOn(patientId, "2026-11-23", "10:00");
+		String fourth = visitOn(patientId, "2026-11-24", "10:00");
+		String third = visitOn(patientId, "2026-11-25", "10:00");
+		visitOn(patientId, "2026-11-26", "10:00");
+		visitOn(patientId, "2026-11-27", "10:00");
 
 		// Act
 		var response = mockMvc.perform(history(patientId).param("page", "2").param("pageSize", "2"));

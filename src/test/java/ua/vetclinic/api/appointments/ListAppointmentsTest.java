@@ -53,7 +53,7 @@ class ListAppointmentsTest {
 	@DisplayName("REQ-F-020: адміністратор отримує список записів — 200 з page, pageSize, total, items та полями запису")
 	void adminListsAppointments_returns200WithPageAndItems() throws Exception {
 		// Arrange
-		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
+		String appointmentId = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
 
 		// Act
 		var response = list("ADMIN", "doctorId", doctorId);
@@ -66,8 +66,8 @@ class ListAppointmentsTest {
 				.andExpect(jsonPath("$.items[0].id", equalTo(appointmentId)))
 				.andExpect(jsonPath("$.items[0].doctorId", equalTo(doctorId)))
 				.andExpect(jsonPath("$.items[0].patientId", equalTo(patientId)))
-				.andExpect(jsonPath("$.items[0].startsAt", equalTo(slot("2026-12-20", "10:00"))))
-				.andExpect(jsonPath("$.items[0].endsAt", equalTo(slot("2026-12-20", "10:30"))))
+				.andExpect(jsonPath("$.items[0].startsAt", equalTo(slot("2026-12-22", "10:00"))))
+				.andExpect(jsonPath("$.items[0].endsAt", equalTo(slot("2026-12-22", "10:30"))))
 				.andExpect(jsonPath("$.items[0].status", equalTo("SCHEDULED")));
 	}
 
@@ -88,9 +88,9 @@ class ListAppointmentsTest {
 	@DisplayName("AD-19.2: записи відсортовані за startsAt за зростанням")
 	void appointments_areSortedByStartsAtAscending() throws Exception {
 		// Arrange
-		String late = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "16:00"));
-		String early = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "09:00"));
-		String middle = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "12:30"));
+		String late = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "16:00"));
+		String early = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:00"));
+		String middle = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "12:30"));
 
 		// Act
 		var response = list("ADMIN", "doctorId", doctorId);
@@ -104,8 +104,8 @@ class ListAppointmentsTest {
 	void filterByDoctor_returnsOnlyThatDoctorsAppointments() throws Exception {
 		// Arrange
 		String otherDoctor = createDoctor(mockMvc, "Список Записів Інший Лікар");
-		String own = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
-		createAppointment(mockMvc, otherDoctor, patientId, slot("2026-12-20", "10:00"));
+		String own = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
+		createAppointment(mockMvc, otherDoctor, patientId, slot("2026-12-22", "10:00"));
 
 		// Act
 		var response = list("ADMIN", "doctorId", doctorId);
@@ -120,8 +120,8 @@ class ListAppointmentsTest {
 	void filterByPatient_returnsOnlyThatPatientsAppointments() throws Exception {
 		// Arrange
 		String otherPatient = createPatientWithOwner(mockMvc, "Список Записів Інший Пацієнт");
-		String own = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
-		createAppointment(mockMvc, doctorId, otherPatient, slot("2026-12-20", "11:00"));
+		String own = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
+		createAppointment(mockMvc, doctorId, otherPatient, slot("2026-12-22", "11:00"));
 
 		// Act
 		var response = list("ADMIN", "patientId", patientId);
@@ -134,8 +134,8 @@ class ListAppointmentsTest {
 	@DisplayName("REQ-F-025: фільтр status відокремлює скасовані записи від запланованих")
 	void filterByStatus_separatesCancelledFromScheduled() throws Exception {
 		// Arrange
-		String scheduled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
-		String cancelled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "11:00"));
+		String scheduled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
+		String cancelled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "11:00"));
 		cancelAppointment(mockMvc, cancelled);
 
 		// Act
@@ -151,8 +151,8 @@ class ListAppointmentsTest {
 	@DisplayName("REQ-F-025: без фільтра статусу список містить і скасовані записи")
 	void defaultList_includesCancelledAppointments() throws Exception {
 		// Arrange
-		String scheduled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
-		String cancelled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "11:00"));
+		String scheduled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
+		String cancelled = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "11:00"));
 		cancelAppointment(mockMvc, cancelled);
 
 		// Act
@@ -166,13 +166,13 @@ class ListAppointmentsTest {
 	@DisplayName("AD-20.3: from і to включно в часовому поясі клініки — перший слот першого дня й останній слот останнього дня входять")
 	void dateRange_isInclusiveInClinicZone() throws Exception {
 		// Arrange
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "17:30"));
-		String firstOfRange = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "09:00"));
-		String lastOfRange = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "17:30"));
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:00"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "17:30"));
+		String firstOfRange = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:00"));
+		String lastOfRange = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-23", "17:30"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-24", "09:00"));
 
 		// Act
-		var response = list("ADMIN", "doctorId", doctorId, "from", "2026-12-20", "to", "2026-12-21");
+		var response = list("ADMIN", "doctorId", doctorId, "from", "2026-12-22", "to", "2026-12-23");
 
 		// Assert
 		response.andExpect(jsonPath("$.items[*].id", contains(firstOfRange, lastOfRange)))
@@ -183,11 +183,11 @@ class ListAppointmentsTest {
 	@DisplayName("AD-20.3: лише from — записи з цієї дати й пізніше")
 	void onlyFrom_returnsAppointmentsFromThatDate() throws Exception {
 		// Arrange
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "10:00"));
-		String later = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "10:00"));
+		String later = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
 
 		// Act
-		var response = list("ADMIN", "doctorId", doctorId, "from", "2026-12-20");
+		var response = list("ADMIN", "doctorId", doctorId, "from", "2026-12-22");
 
 		// Assert
 		response.andExpect(jsonPath("$.items[*].id", contains(later)));
@@ -197,11 +197,11 @@ class ListAppointmentsTest {
 	@DisplayName("AD-20.3: лише to — записи до цієї дати включно")
 	void onlyTo_returnsAppointmentsUpToThatDate() throws Exception {
 		// Arrange
-		String earlier = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-19", "10:00"));
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
+		String earlier = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "10:00"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
 
 		// Act
-		var response = list("ADMIN", "doctorId", doctorId, "to", "2026-12-19");
+		var response = list("ADMIN", "doctorId", doctorId, "to", "2026-12-21");
 
 		// Assert
 		response.andExpect(jsonPath("$.items[*].id", contains(earlier)));
@@ -225,8 +225,8 @@ class ListAppointmentsTest {
 	@DisplayName("AD-17.5: from пізніше за to — 422, поле to, причина INVALID_RANGE")
 	void fromAfterTo_returns422InvalidRange() throws Exception {
 		// Arrange
-		String from = "2026-12-21";
-		String to = "2026-12-20";
+		String from = "2026-12-23";
+		String to = "2026-12-22";
 
 		// Act
 		var response = list("ADMIN", "from", from, "to", to);
@@ -241,14 +241,14 @@ class ListAppointmentsTest {
 	@DisplayName("REQ-F-020: фільтри поєднуються — лікар, пацієнт, статус і діапазон дат разом")
 	void combinedFilters_applyTogether() throws Exception {
 		// Arrange
-		String wanted = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
+		String wanted = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
 		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-25", "10:00"));
 		String otherPatient = createPatientWithOwner(mockMvc, "Список Записів Не Той Пацієнт");
-		createAppointment(mockMvc, doctorId, otherPatient, slot("2026-12-20", "11:00"));
+		createAppointment(mockMvc, doctorId, otherPatient, slot("2026-12-22", "11:00"));
 
 		// Act
 		var response = list("ADMIN", "doctorId", doctorId, "patientId", patientId, "status", "SCHEDULED", "from",
-				"2026-12-20", "to", "2026-12-21");
+				"2026-12-22", "to", "2026-12-23");
 
 		// Assert
 		response.andExpect(jsonPath("$.items[*].id", contains(wanted)));
@@ -258,9 +258,9 @@ class ListAppointmentsTest {
 	@DisplayName("AD-15.4: page і pageSize вибирають зріз відсортованого результату, total — загальна кількість")
 	void paging_returnsRequestedSliceAndTotal() throws Exception {
 		// Arrange
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "09:00"));
-		String second = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "09:30"));
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "10:00"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:00"));
+		String second = createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:30"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "10:00"));
 
 		// Act
 		var response = list("ADMIN", "doctorId", doctorId, "page", "2", "pageSize", "1");
@@ -276,7 +276,7 @@ class ListAppointmentsTest {
 	@DisplayName("AD-15.4: сторінка за межами результату — 200 з порожнім items і незмінним total")
 	void pageBeyondResult_returnsEmptyItems() throws Exception {
 		// Arrange
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "09:00"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:00"));
 
 		// Act
 		var response = list("ADMIN", "doctorId", doctorId, "page", "999");
@@ -420,8 +420,8 @@ class ListAppointmentsTest {
 	@DisplayName("REQ-F-020: total у списку без фільтрів не менший за кількість створених записів")
 	void listWithoutFilters_hasTotalOfAtLeastCreatedAppointments() throws Exception {
 		// Arrange
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "09:00"));
-		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-20", "09:30"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:00"));
+		createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:30"));
 
 		// Act
 		var response = list("ADMIN");

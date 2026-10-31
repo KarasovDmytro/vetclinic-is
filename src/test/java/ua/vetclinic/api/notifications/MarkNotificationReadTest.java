@@ -39,7 +39,7 @@ class MarkNotificationReadTest {
 	void createNotification() throws Exception {
 		Doctor doctor = newDoctor(mockMvc, "Лікар Прочитання");
 		medicationId = createMedication(mockMvc, uniqueName("Прочитання"), 5, 10);
-		withdraw(mockMvc, doctor, medicationId, 1, "2026-11-28", "10:00");
+		withdraw(mockMvc, doctor, medicationId, 1, "2026-11-30", "10:00");
 		notificationId = (String) notificationsOf(mockMvc, medicationId).get(0).get("id");
 	}
 

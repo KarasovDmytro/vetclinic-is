@@ -169,7 +169,7 @@ class CreateAppointmentTest {
 		for (int i = 0; i < 8; i++) {
 			patients.add(createPatientWithOwner(mockMvc, "Запис Пацієнт Гонка " + i));
 		}
-		String startsAt = slot("2026-12-05", "10:00");
+		String startsAt = slot("2026-12-09", "10:00");
 		var executor = java.util.concurrent.Executors.newFixedThreadPool(8);
 		var start = new java.util.concurrent.CountDownLatch(1);
 
@@ -206,7 +206,7 @@ class CreateAppointmentTest {
 				.andExpect(status().isOk());
 
 		// Act
-		var response = postAppointment(doctorId, patientId, slot("2026-12-06", "10:00"));
+		var response = postAppointment(doctorId, patientId, slot("2026-12-10", "10:00"));
 
 		// Assert
 		response.andExpect(status().isConflict())
@@ -222,7 +222,7 @@ class CreateAppointmentTest {
 		String unknownPatient = "00000000-0000-4000-8000-000000000611";
 
 		// Act
-		var response = postAppointment(doctorId, unknownPatient, slot("2026-12-06", "11:00"));
+		var response = postAppointment(doctorId, unknownPatient, slot("2026-12-10", "11:00"));
 
 		// Assert
 		response.andExpect(status().isUnprocessableContent())
@@ -238,7 +238,7 @@ class CreateAppointmentTest {
 		String unknownDoctor = "00000000-0000-4000-8000-000000000612";
 
 		// Act
-		var response = postAppointment(unknownDoctor, patientId, slot("2026-12-06", "11:00"));
+		var response = postAppointment(unknownDoctor, patientId, slot("2026-12-10", "11:00"));
 
 		// Assert
 		response.andExpect(status().isUnprocessableContent())
@@ -255,7 +255,7 @@ class CreateAppointmentTest {
 		String patientId = createPatientWithOwner(mockMvc, "Запис Пацієнт Адмін");
 
 		// Act
-		var response = postAppointment(adminId, patientId, slot("2026-12-06", "11:00"));
+		var response = postAppointment(adminId, patientId, slot("2026-12-10", "11:00"));
 
 		// Assert
 		response.andExpect(status().isUnprocessableContent())
@@ -273,7 +273,7 @@ class CreateAppointmentTest {
 				.andExpect(status().isOk());
 
 		// Act
-		var response = postAppointment(doctorId, patientId, slot("2026-12-06", "11:00"));
+		var response = postAppointment(doctorId, patientId, slot("2026-12-10", "11:00"));
 
 		// Assert
 		response.andExpect(status().isUnprocessableContent())
@@ -289,7 +289,7 @@ class CreateAppointmentTest {
 		String unknownPatient = "00000000-0000-4000-8000-000000000611";
 
 		// Act
-		var response = postAppointment(unknownDoctor, unknownPatient, slot("2026-12-06", "11:00"));
+		var response = postAppointment(unknownDoctor, unknownPatient, slot("2026-12-10", "11:00"));
 
 		// Assert
 		response.andExpect(status().isUnprocessableContent())

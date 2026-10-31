@@ -42,10 +42,12 @@ class OwnerService {
 
 	OwnerResponse update(UUID ownerId, UpdateOwnerRequest request) {
 		if (request.isEmpty()) {
+			auditLog.failure("OWNER_UPDATED", "OWNER", ownerId, "VALIDATION_ERROR");
 			throw new EmptyBodyException();
 		}
 		List<ErrorDetail> missingRequired = request.nullRequiredFields();
 		if (!missingRequired.isEmpty()) {
+			auditLog.failure("OWNER_UPDATED", "OWNER", ownerId, "VALIDATION_ERROR");
 			throw new RequestValidationException(missingRequired);
 		}
 		OwnerEntity owner = findOrThrow(ownerId);

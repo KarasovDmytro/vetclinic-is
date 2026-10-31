@@ -44,9 +44,11 @@ class UserService {
 	UserResponse deactivate(UUID userId) {
 		UserEntity user = findOrThrow(userId);
 		if (!user.isActive()) {
+			auditLog.failure("USER_DEACTIVATED", "USER", userId, "USER_ALREADY_DEACTIVATED");
 			throw new ConflictException("USER_ALREADY_DEACTIVATED", "Користувача вже деактивовано");
 		}
 		if (user.isAdmin() && userRepository.countByRoleAndActive(Role.ADMIN, true) <= 1) {
+			auditLog.failure("USER_DEACTIVATED", "USER", userId, "LAST_ADMIN");
 			throw new ConflictException("LAST_ADMIN", "Не можна деактивувати останнього адміністратора");
 		}
 		user.deactivate();

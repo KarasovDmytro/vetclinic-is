@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static ua.vetclinic.api.TestAccounts.createUser;
 import static ua.vetclinic.api.TestAccounts.loginAndGetToken;
 import static ua.vetclinic.api.TestOwners.createOwner;
@@ -114,6 +115,48 @@ class OwnerAuditTest {
 				containsString("requestId=" + result.getResponse().getHeader("X-Request-Id")))));
 		assertThat(audit.lines(), everyItem(not(containsString("Секретне"))));
 		assertThat(audit.lines(), everyItem(not(containsString("+380502020202"))));
+	}
+
+	@Test
+	@DisplayName("AD-22.4: порожнє тіло PATCH (422) — OWNER_UPDATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+	void updateWithEmptyBody_isAuditedAsFailure() throws Exception {
+		// Arrange
+		String ownerId = createOwner(mockMvc, "Власник Порожньої Правки", "+380504040404");
+
+		// Act
+		mockMvc.perform(patch("/api/v1/owners/" + ownerId)
+				.with(user("admin").roles("ADMIN"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
+				.andExpect(status().isUnprocessableContent());
+
+		// Assert
+		assertThat(audit.lines(), hasItem(allOf(
+				containsString("event=OWNER_UPDATED"),
+				containsString("entityId=" + ownerId),
+				containsString("outcome=FAILURE"),
+				containsString("errorCode=VALIDATION_ERROR"))));
+	}
+
+	@Test
+	@DisplayName("AD-22.4: обов'язкове поле null у PATCH (422) — OWNER_UPDATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+	void updateWithNullRequiredField_isAuditedAsFailure() throws Exception {
+		// Arrange
+		String ownerId = createOwner(mockMvc, "Власник Null Правки", "+380505050505");
+
+		// Act
+		mockMvc.perform(patch("/api/v1/owners/" + ownerId)
+				.with(user("admin").roles("ADMIN"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{ \"fullName\": null }"))
+				.andExpect(status().isUnprocessableContent());
+
+		// Assert
+		assertThat(audit.lines(), hasItem(allOf(
+				containsString("event=OWNER_UPDATED"),
+				containsString("entityId=" + ownerId),
+				containsString("outcome=FAILURE"),
+				containsString("errorCode=VALIDATION_ERROR"))));
 	}
 
 	@Test

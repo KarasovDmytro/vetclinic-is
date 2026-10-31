@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
-import ua.vetclinic.api.AuditLogCapture;
+import ua.vetclinic.api.LogCapture;
 
 /** REQ-NF-006, AD-21.5: рядок на кожен HTTP-запит без query-параметрів і тіл. */
 @ApiIntegrationTest
 class HttpRequestLogTest {
 
-	private final AuditLogCapture httpLog = new AuditLogCapture("HTTP");
+	private final LogCapture httpLog = new LogCapture("HTTP");
 
 	@Autowired
 	private MockMvc mockMvc;

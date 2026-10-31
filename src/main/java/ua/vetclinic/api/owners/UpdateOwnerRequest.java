@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import ua.vetclinic.api.common.ErrorDetail;
+import ua.vetclinic.api.common.Strings;
 
 /** PATCH: сеттери запам'ятовують, які поля прийшли, щоб відрізнити відсутнє поле від явного null. */
 public class UpdateOwnerRequest {
@@ -30,22 +31,22 @@ public class UpdateOwnerRequest {
 	private String address;
 
 	public void setFullName(String fullName) {
-		this.fullName = strip(fullName);
+		this.fullName = Strings.strip(fullName);
 		provided.add("fullName");
 	}
 
 	public void setPhone(String phone) {
-		this.phone = strip(phone);
+		this.phone = Strings.strip(phone);
 		provided.add("phone");
 	}
 
 	public void setEmail(String email) {
-		this.email = strip(email);
+		this.email = Strings.strip(email);
 		provided.add("email");
 	}
 
 	public void setAddress(String address) {
-		this.address = strip(address);
+		this.address = Strings.strip(address);
 		provided.add("address");
 	}
 
@@ -82,9 +83,5 @@ public class UpdateOwnerRequest {
 			details.add(new ErrorDetail("phone", "REQUIRED", "Поле обов'язкове"));
 		}
 		return details;
-	}
-
-	private static String strip(String value) {
-		return value == null ? null : value.strip();
 	}
 }

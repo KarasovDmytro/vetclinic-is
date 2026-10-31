@@ -25,13 +25,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
-import ua.vetclinic.api.AuditLogCapture;
+import ua.vetclinic.api.LogCapture;
 
 /** REQ-NF-006, AD-22, AD-24.2: реєстрація власника фіксується в журналі аудиту без персональних даних. */
 @ApiIntegrationTest
 class OwnerAuditTest {
 
-	private final AuditLogCapture audit = new AuditLogCapture();
+	private final LogCapture audit = new LogCapture();
 
 	@Autowired
 	private MockMvc mockMvc;

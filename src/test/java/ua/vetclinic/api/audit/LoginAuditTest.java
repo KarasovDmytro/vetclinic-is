@@ -20,13 +20,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
-import ua.vetclinic.api.AuditLogCapture;
+import ua.vetclinic.api.LogCapture;
 
 /** REQ-NF-006, AD-22: кожна спроба входу фіксується в журналі аудиту. */
 @ApiIntegrationTest
 class LoginAuditTest {
 
-	private final AuditLogCapture audit = new AuditLogCapture();
+	private final LogCapture audit = new LogCapture();
 
 	@Autowired
 	private MockMvc mockMvc;

@@ -1,6 +1,7 @@
 package ua.vetclinic.api.owners;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.common.EmptyBodyException;
+import ua.vetclinic.api.common.ErrorDetail;
 import ua.vetclinic.api.common.RequestValidationException;
 
 @Service
@@ -41,8 +43,9 @@ class OwnerService {
 		if (request.isEmpty()) {
 			throw new EmptyBodyException();
 		}
-		if (!request.nullRequiredFields().isEmpty()) {
-			throw new RequestValidationException(request.nullRequiredFields());
+		List<ErrorDetail> missingRequired = request.nullRequiredFields();
+		if (!missingRequired.isEmpty()) {
+			throw new RequestValidationException(missingRequired);
 		}
 		OwnerEntity owner = findOrThrow(ownerId);
 		owner.apply(request, OffsetDateTime.now());

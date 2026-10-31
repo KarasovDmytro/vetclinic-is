@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
-import ua.vetclinic.api.AuditLogCapture;
+import ua.vetclinic.api.LogCapture;
 
 /** REQ-NF-006, AD-22, AD-23: зміни облікових записів фіксуються в журналі аудиту без паролів. */
 @ApiIntegrationTest
@@ -29,7 +29,7 @@ class UserAuditTest {
 
 	private static final String ADMIN_PASSWORD = "Admin-Passw0rd-2026";
 
-	private final AuditLogCapture audit = new AuditLogCapture();
+	private final LogCapture audit = new LogCapture();
 
 	@Autowired
 	private MockMvc mockMvc;

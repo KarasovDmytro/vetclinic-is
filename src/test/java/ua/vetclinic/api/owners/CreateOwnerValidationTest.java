@@ -1,5 +1,6 @@
 package ua.vetclinic.api.owners;
 
+import static ua.vetclinic.api.TestData.LONG_EMAIL;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -18,9 +19,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** REQ-F-010, AD-17, AD-18: правила полів власника при реєстрації (операція createOwner). */
 @ApiIntegrationTest
 class CreateOwnerValidationTest {
-
-	private static final String LONG_EMAIL =
-			"a".repeat(64) + "@" + ("b".repeat(60) + ".").repeat(3) + "example";
 
 	@Autowired
 	private MockMvc mockMvc;

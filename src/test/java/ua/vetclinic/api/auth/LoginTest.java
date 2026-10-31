@@ -1,5 +1,6 @@
 package ua.vetclinic.api.auth;
 
+import static ua.vetclinic.api.TestData.UUID_PATTERN;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
@@ -21,9 +22,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** REQ-F-003, AD-01: вхід за email і паролем видає bearer-токен на 8 годин. */
 @ApiIntegrationTest
 class LoginTest {
-
-	private static final String UUID_PATTERN =
-			"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 	@Autowired
 	private MockMvc mockMvc;

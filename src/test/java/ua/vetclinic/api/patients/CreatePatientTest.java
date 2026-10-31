@@ -1,5 +1,6 @@
 package ua.vetclinic.api.patients;
 
+import static ua.vetclinic.api.TestData.UUID_PATTERN;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
@@ -21,9 +22,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** REQ-F-012, REQ-F-014: Адміністратор реєструє пацієнта з прив'язкою до власника (операція createPatient). */
 @ApiIntegrationTest
 class CreatePatientTest {
-
-	private static final String UUID_PATTERN =
-			"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 	@Autowired
 	private MockMvc mockMvc;

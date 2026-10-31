@@ -1,5 +1,6 @@
 package ua.vetclinic.api.owners;
 
+import static ua.vetclinic.api.TestData.CLINIC_OFFSET_TIMESTAMP;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -27,9 +28,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** REQ-F-004, REQ-NF-002, AD-18, AD-19: доступ за ролями, порядок перевірок і конвенції API для власників. */
 @ApiIntegrationTest
 class OwnerAccessAndContractTest {
-
-	private static final String CLINIC_OFFSET_TIMESTAMP =
-			"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?\\+0[23]:00";
 
 	private static final String UNKNOWN_ID = "00000000-0000-4000-8000-000000000499";
 

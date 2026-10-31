@@ -1,5 +1,6 @@
 package ua.vetclinic.api.users;
 
+import static ua.vetclinic.api.TestData.UUID_PATTERN;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -19,9 +20,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** REQ-F-001: Адміністратор може створити обліковий запис із роллю Адміністратор або Лікар. */
 @ApiIntegrationTest
 class CreateUserTest {
-
-	private static final String UUID_PATTERN =
-			"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 	@Autowired
 	private MockMvc mockMvc;

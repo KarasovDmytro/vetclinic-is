@@ -1,5 +1,6 @@
 package ua.vetclinic.api.owners;
 
+import static ua.vetclinic.api.TestData.UUID_PATTERN;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
@@ -19,9 +20,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** REQ-F-010: Адміністратор реєструє нового власника (операція createOwner). */
 @ApiIntegrationTest
 class CreateOwnerTest {
-
-	private static final String UUID_PATTERN =
-			"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 	@Autowired
 	private MockMvc mockMvc;

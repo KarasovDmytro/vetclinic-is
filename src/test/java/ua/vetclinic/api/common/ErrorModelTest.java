@@ -1,5 +1,6 @@
 package ua.vetclinic.api.common;
 
+import static ua.vetclinic.api.TestData.UUID_PATTERN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -24,9 +25,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** AD-18: єдина модель помилки та заголовки відповідей. */
 @ApiIntegrationTest
 class ErrorModelTest {
-
-	private static final String UUID_PATTERN =
-			"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 	private static final String OFFSET_DATE_TIME_PATTERN =
 			"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*[+-]\\d{2}:\\d{2}";

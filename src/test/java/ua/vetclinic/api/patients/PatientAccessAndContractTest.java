@@ -1,5 +1,6 @@
 package ua.vetclinic.api.patients;
 
+import static ua.vetclinic.api.TestData.CLINIC_OFFSET_TIMESTAMP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -28,9 +29,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** REQ-F-004, REQ-NF-002, AD-18, AD-19: доступ за ролями і конвенції API для пацієнтів. */
 @ApiIntegrationTest
 class PatientAccessAndContractTest {
-
-	private static final String CLINIC_OFFSET_TIMESTAMP =
-			"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?\\+0[23]:00";
 
 	@Autowired
 	private MockMvc mockMvc;

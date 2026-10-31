@@ -1,5 +1,6 @@
 package ua.vetclinic.api.users;
 
+import static ua.vetclinic.api.TestData.UUID_PATTERN;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -24,9 +25,6 @@ import ua.vetclinic.api.ApiIntegrationTest;
 /** AD-18: непередбачена помилка не розкриває технічних деталей клієнту. */
 @ApiIntegrationTest
 class InternalErrorTest {
-
-	private static final String UUID_PATTERN =
-			"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 	@Autowired
 	private MockMvc mockMvc;

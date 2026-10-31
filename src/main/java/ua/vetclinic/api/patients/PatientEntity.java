@@ -57,4 +57,23 @@ class PatientEntity {
 	PatientResponse toResponse() {
 		return new PatientResponse(id, ownerId, name, species, breed, sex, birthDate, status, createdAt, updatedAt);
 	}
+
+	void apply(UpdatePatientRequest changes, OffsetDateTime now) {
+		if (changes.isProvided("name")) {
+			this.name = changes.name();
+		}
+		if (changes.isProvided("species")) {
+			this.species = changes.species();
+		}
+		if (changes.isProvided("breed")) {
+			this.breed = changes.breed();
+		}
+		if (changes.isProvided("sex")) {
+			this.sex = changes.sex();
+		}
+		if (changes.isProvided("birthDate")) {
+			this.birthDate = changes.birthDate();
+		}
+		this.updatedAt = now;
+	}
 }

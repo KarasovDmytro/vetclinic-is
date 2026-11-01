@@ -1,0 +1,183 @@
+package ua.vetclinic.api.auth;
+
+import static ua.vetclinic.api.TestData.UUID_PATTERN;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.emptyString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ua.vetclinic.api.TestAccounts.createUser;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import ua.vetclinic.api.ApiIntegrationTest;
+
+/** REQ-F-003, AD-01: вхід за email і паролем видає bearer-токен на 8 годин. */
+@ApiIntegrationTest
+class LoginTest {
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Test
+	@DisplayName("AD-01: вхід з вірними даними — 200, bearer-токен на 8 годин і дані користувача без пароля")
+	void validCredentials_returns200WithBearerTokenAndUser() throws Exception {
+		// Arrange
+		createUser(mockMvc, "login.kovalchuk@clinic.example", "Ковальчук Андрій Миколайович", "VETERINARIAN", "Vet-Passw0rd-2026");
+		String loginBody = """
+				{
+				  "email": "login.kovalchuk@clinic.example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accessToken", not(emptyString())))
+				.andExpect(jsonPath("$.tokenType", equalTo("Bearer")))
+				.andExpect(jsonPath("$.expiresIn", equalTo(28800)))
+				.andExpect(jsonPath("$.user.id", matchesPattern(UUID_PATTERN)))
+				.andExpect(jsonPath("$.user.email", equalTo("login.kovalchuk@clinic.example")))
+				.andExpect(jsonPath("$.user.fullName", equalTo("Ковальчук Андрій Миколайович")))
+				.andExpect(jsonPath("$.user.role", equalTo("VETERINARIAN")))
+				.andExpect(jsonPath("$.user.password").doesNotExist())
+				.andExpect(jsonPath("$.user.passwordHash").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("AD-01: невірний пароль — 401 INVALID_CREDENTIALS")
+	void wrongPassword_returns401InvalidCredentials() throws Exception {
+		// Arrange
+		createUser(mockMvc, "login.melnyk@clinic.example", "Мельник Тетяна Олексіївна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		String loginBody = """
+				{
+				  "email": "login.melnyk@clinic.example",
+				  "password": "Wrong-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code", equalTo("INVALID_CREDENTIALS")))
+				.andExpect(jsonPath("$.message", equalTo("Невірний email або пароль")))
+				.andExpect(jsonPath("$.status", equalTo(401)))
+				.andExpect(jsonPath("$.path", equalTo("/api/v1/auth/login")))
+				.andExpect(jsonPath("$.accessToken").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("AD-01: невідомий email — така сама відповідь 401 INVALID_CREDENTIALS")
+	void unknownEmail_returns401InvalidCredentialsWithSameMessage() throws Exception {
+		// Arrange
+		String loginBody = """
+				{
+				  "email": "login.nobody@clinic.example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code", equalTo("INVALID_CREDENTIALS")))
+				.andExpect(jsonPath("$.message", equalTo("Невірний email або пароль")));
+	}
+
+	@Test
+	@DisplayName("REQ-F-003: деактивований користувач із вірним паролем — 403 ACCOUNT_DEACTIVATED")
+	void deactivatedUser_returns403AccountDeactivated() throws Exception {
+		// Arrange
+		String userId = createUser(mockMvc, "login.shevchuk@clinic.example", "Шевчук Олена Павлівна", "VETERINARIAN",
+				"Vet-Passw0rd-2026");
+		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()))
+				.andExpect(status().isOk());
+		String loginBody = """
+				{
+				  "email": "login.shevchuk@clinic.example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code", equalTo("ACCOUNT_DEACTIVATED")))
+				.andExpect(jsonPath("$.message", equalTo("Обліковий запис деактивовано")))
+				.andExpect(jsonPath("$.accessToken").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("AD-17: email при вході не залежить від регістру — 200")
+	void emailInDifferentCase_returns200() throws Exception {
+		// Arrange
+		createUser(mockMvc, "login.bondar@clinic.example", "Бондар Лариса Вікторівна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		String loginBody = """
+				{
+				  "email": "Login.Bondar@Clinic.Example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.user.email", equalTo("login.bondar@clinic.example")));
+	}
+
+	@Test
+	@DisplayName("AD-01: безстанове API — вхід без CSRF-токена працює (клієнт не має сесії)")
+	void validCredentialsWithoutCsrfToken_returns200() throws Exception {
+		// Arrange
+		createUser(mockMvc, "login.honchar@clinic.example", "Гончар Світлана Ігорівна", "VETERINARIAN", "Vet-Passw0rd-2026");
+		String loginBody = """
+				{
+				  "email": "login.honchar@clinic.example",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tokenType", equalTo("Bearer")));
+	}
+}

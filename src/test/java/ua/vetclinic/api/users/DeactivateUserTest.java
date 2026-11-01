@@ -1,0 +1,108 @@
+package ua.vetclinic.api.users;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import ua.vetclinic.api.ApiIntegrationTest;
+
+/** REQ-F-002: Адміністратор може деактивувати обліковий запис (операція deactivateUser). */
+@ApiIntegrationTest
+class DeactivateUserTest {
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Test
+	@DisplayName("REQ-F-002: адміністратор деактивує лікаря — 200 і active=false")
+	void adminDeactivatesVeterinarian_returns200WithActiveFalse() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "hrytsenko@clinic.example",
+				  "fullName": "Гриценко Оксана Миколаївна",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+		MvcResult created = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String userId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()));
+
+		// Assert
+		response.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", equalTo(userId)))
+				.andExpect(jsonPath("$.active", equalTo(false)));
+	}
+
+	@Test
+	@DisplayName("REQ-F-002: деактивація неіснуючого користувача — 404 NOT_FOUND")
+	void adminDeactivatesUnknownUser_returns404NotFound() throws Exception {
+		// Arrange
+		String unknownId = "00000000-0000-4000-8000-000000000405";
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users/" + unknownId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()));
+
+		// Assert
+		response.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
+	}
+
+	@Test
+	@DisplayName("REQ-F-002: повторна деактивація — 409 USER_ALREADY_DEACTIVATED")
+	void adminDeactivatesAlreadyDeactivatedUser_returns409UserAlreadyDeactivated() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+				  "email": "lysenko@clinic.example",
+				  "fullName": "Лисенко Дарина Олегівна",
+				  "role": "VETERINARIAN",
+				  "password": "Vet-Passw0rd-2026"
+				}
+				""";
+		MvcResult created = mockMvc.perform(post("/api/v1/users")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String userId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()))
+				.andExpect(status().isOk());
+
+		// Act
+		var response = mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
+				.with(user("admin").roles("ADMIN"))
+				.with(csrf()));
+
+		// Assert
+		response.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code", equalTo("USER_ALREADY_DEACTIVATED")));
+	}
+}

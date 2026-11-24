@@ -44,7 +44,7 @@ cd vet-clinic
 docker compose up -d
 ```
 
-Команда піднімає PostgreSQL 17 і Swagger UI. База `vetclinic` слухає `127.0.0.1:5433` (користувач і пароль `vetclinic`). Дані зберігаються в томі `vet-clinic_postgres-data`. Порт 5433 вибрано, щоб не конфліктувати з локальним PostgreSQL на 5432.
+Команда піднімає PostgreSQL 17 і Swagger UI. База `vetclinic` слухає `127.0.0.1:5433` (користувач і пароль `vetclinic`). Дані зберігаються в томі `vet-clinic_postgres-data`. Порт 5433 вибрано, щоб не конфліктувати з локальним PostgreSQL на 5432. Контейнери мають фіксовані імена `vet-clinic-postgres` і `vet-clinic-swagger-ui`, тому на одній машині може працювати лише один такий стек.
 
 Схему створювати вручну не треба: міграції Flyway застосовуються під час старту застосунку.
 
@@ -117,7 +117,7 @@ docker compose down
 | `JWT_SECRET` | секрет лише для розробки | ключ підпису токенів HS256, не коротший за 32 байти. На проді обов'язково свій |
 | `BOOTSTRAP_ADMIN_EMAIL` | `admin@clinic.example` | email першого адміністратора |
 | `BOOTSTRAP_ADMIN_PASSWORD` | порожній (адміністратор не створюється) | пароль першого адміністратора, від 8 до 72 символів |
-| `SERVER_PORT` | `8080` | HTTP-порт застосунку |
+| `SERVER_PORT` | `8080` | HTTP-порт застосунку. Swagger UI проксує запити саме на `8080` хоста, тож з іншим портом «Try it out» до застосунку не дійде |
 | `VETCLINIC_LOGGING_DIR` | `var/log` | каталог файлів журналів |
 | `SWAGGER_PORT` | `8081` | порт Swagger UI (лише `docker-compose.yaml`) |
 

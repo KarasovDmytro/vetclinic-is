@@ -21,7 +21,7 @@ import ua.vetclinic.api.common.ForbiddenException;
 import ua.vetclinic.api.common.RequestValidationException;
 import ua.vetclinic.api.common.ResourceNotFoundException;
 import ua.vetclinic.api.medications.MedicationStock;
-import ua.vetclinic.api.medications.StockRequest;
+import ua.vetclinic.api.medications.StockWithdrawal;
 import ua.vetclinic.api.medications.WithdrawnMedication;
 import ua.vetclinic.api.notifications.LowStockNotifier;
 import ua.vetclinic.api.patients.PatientLookup;
@@ -94,7 +94,7 @@ class VisitService {
       withdrawn =
           medicationStock.withdraw(
               request.medications().stream()
-                  .map(item -> new StockRequest(item.medicationId(), item.quantity()))
+                  .map(item -> new StockWithdrawal(item.medicationId(), item.quantity()))
                   .toList());
     } catch (ConflictException exception) {
       throw failed("VISIT_CREATED", null, exception.code(), exception);
@@ -120,7 +120,7 @@ class VisitService {
         .filter(WithdrawnMedication::isLow)
         .forEach(item ->
             lowStockNotifier.notifyLowStock(
-                item.medicationId(), item.name(), item.remaining(), item.minThreshold()));
+                item.medicationId(), item.name(), item.remainingStock(), item.minThreshold()));
     auditLog.success("VISIT_CREATED", "VISIT", created.id());
     return created;
   }

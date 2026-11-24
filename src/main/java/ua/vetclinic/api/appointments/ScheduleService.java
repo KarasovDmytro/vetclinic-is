@@ -50,12 +50,12 @@ class ScheduleService {
     doctors
         .find(doctorId)
         .orElseThrow(() -> new ResourceNotFoundException("Doctor not found: " + doctorId));
-    NavigableMap<Instant, SlotAppointment> occupied = occupiedSlots(doctorId, from, to);
+    NavigableMap<Instant, SlotAppointment> booked = bookedSlots(doctorId, from, to);
     List<SlotResponse> slots = new ArrayList<>();
     for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-      slotStartsOf(day, occupied)
+      slotStartsOf(day, booked)
           .forEach(start -> {
-            SlotAppointment appointment = occupied.get(start.toInstant());
+            SlotAppointment appointment = booked.get(start.toInstant());
             slots.add(
                 new SlotResponse(
                     start.toOffsetDateTime(),
@@ -72,18 +72,18 @@ class ScheduleService {
    * (AD-25.6-7).
    */
   private static List<ZonedDateTime> slotStartsOf(
-      LocalDate day, NavigableMap<Instant, SlotAppointment> occupied) {
+      LocalDate day, NavigableMap<Instant, SlotAppointment> booked) {
     if (ClinicSchedule.isWorkingDay(day)) {
       return ClinicSchedule.slotStartsOf(day);
     }
     Instant dayStart = day.atStartOfDay(ClinicZone.ZONE).toInstant();
     Instant nextDayStart = day.plusDays(1).atStartOfDay(ClinicZone.ZONE).toInstant();
-    return occupied.subMap(dayStart, true, nextDayStart, false).keySet().stream()
+    return booked.subMap(dayStart, true, nextDayStart, false).keySet().stream()
         .map(start -> start.atZone(ClinicZone.ZONE))
         .toList();
   }
 
-  private NavigableMap<Instant, SlotAppointment> occupiedSlots(
+  private NavigableMap<Instant, SlotAppointment> bookedSlots(
       UUID doctorId, LocalDate from, LocalDate to) {
     OffsetDateTime rangeStart = from.atStartOfDay(ClinicZone.ZONE).toOffsetDateTime();
     OffsetDateTime rangeEnd = to.plusDays(1).atStartOfDay(ClinicZone.ZONE).toOffsetDateTime();
@@ -92,9 +92,9 @@ class ScheduleService {
             doctorId, rangeStart, rangeEnd, AppointmentService.OCCUPYING);
     Map<UUID, String> names =
         patients.namesOf(appointments.stream().map(AppointmentEntity::patientId).toList());
-    NavigableMap<Instant, SlotAppointment> occupied = new TreeMap<>();
+    NavigableMap<Instant, SlotAppointment> booked = new TreeMap<>();
     for (AppointmentEntity appointment : appointments) {
-      occupied.put(
+      booked.put(
           appointment.startsAt().toInstant(),
           new SlotAppointment(
               appointment.id(),
@@ -102,6 +102,6 @@ class ScheduleService {
               names.get(appointment.patientId()),
               appointment.status()));
     }
-    return occupied;
+    return booked;
   }
 }

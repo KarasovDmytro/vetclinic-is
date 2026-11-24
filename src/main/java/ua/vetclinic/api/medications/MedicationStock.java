@@ -43,14 +43,14 @@ public class MedicationStock {
    * описує кожен проблемний препарат (REQ-F-046). Рядки блокуються до кінця транзакції викликача,
    * тому паралельні списання не можуть перевищити залишок (REQ-F-048).
    */
-  public List<WithdrawnMedication> withdraw(List<StockRequest> requests) {
+  public List<WithdrawnMedication> withdraw(List<StockWithdrawal> requests) {
     Map<UUID, MedicationEntity> locked = new HashMap<>();
     medicationRepository
-        .findAllForUpdate(requests.stream().map(StockRequest::medicationId).toList())
+        .findAllForUpdate(requests.stream().map(StockWithdrawal::medicationId).toList())
         .forEach(medication -> locked.put(medication.id(), medication));
     List<ErrorDetail> shortages = new ArrayList<>();
     for (int i = 0; i < requests.size(); i++) {
-      StockRequest request = requests.get(i);
+      StockWithdrawal request = requests.get(i);
       MedicationEntity medication = locked.get(request.medicationId());
       if (medication.quantity() < request.quantity()) {
         Map<String, Object> params = new LinkedHashMap<>();
@@ -74,7 +74,7 @@ public class MedicationStock {
     }
     OffsetDateTime now = OffsetDateTime.now();
     List<WithdrawnMedication> withdrawn = new ArrayList<>();
-    for (StockRequest request : requests) {
+    for (StockWithdrawal request : requests) {
       MedicationEntity medication = locked.get(request.medicationId());
       medication.adjust(-request.quantity(), now);
       withdrawn.add(

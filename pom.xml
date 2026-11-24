@@ -108,6 +108,12 @@
 			<artifactId>testcontainers-postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Розбір spec/api/openapi.yaml в OpenApiContractConsistencyTest; версію задає Spring Boot. -->
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -26,6 +26,13 @@ import ua.vetclinic.api.medications.WithdrawnMedication;
 import ua.vetclinic.api.notifications.LowStockNotifier;
 import ua.vetclinic.api.patients.PatientLookup;
 
+/**
+ * Бізнес-логіка прийомів: збереження результатів за записом, списання препаратів і сповіщення про
+ * низький залишок в одній транзакції (REQ-NF-005).
+ *
+ * <p>Якщо будь-яка перевірка чи списання не вдається, не зберігається нічого: ні прийом, ні зміна
+ * статусу запису, ні залишки.
+ */
 @Service
 class VisitService {
 
@@ -60,6 +67,19 @@ class VisitService {
     this.auditLog = auditLog;
   }
 
+  /**
+   * Зберігає прийом, переводить запис у статус «Завершено» і списує витрачені препарати.
+   *
+   * @param doctorId лікар із токена
+   * @param appointmentId запис, за яким проведено прийом
+   * @param request результати прийому
+   * @return створений прийом
+   * @throws RequestValidationException якщо препарат повторюється або відсутній у каталозі
+   * @throws ResourceNotFoundException якщо запису немає
+   * @throws ForbiddenException {@code NOT_ASSIGNED_DOCTOR}, якщо запис призначено іншому лікарю
+   * @throws ConflictException {@code APPOINTMENT_NOT_SCHEDULED}, {@code PATIENT_ARCHIVED} або
+   *     {@code INSUFFICIENT_STOCK}
+   */
   @Transactional
   VisitResponse create(UUID doctorId, UUID appointmentId, CreateVisitRequest request) {
     List<ErrorDetail> referenceErrors = medicationErrors(request.medications());
@@ -125,11 +145,31 @@ class VisitService {
     return created;
   }
 
+  /**
+   * Повертає прийом за ідентифікатором.
+   *
+   * @param visitId ідентифікатор прийому
+   * @return прийом
+   * @throws ResourceNotFoundException якщо прийому немає
+   */
   @Transactional(readOnly = true)
   VisitResponse get(UUID visitId) {
     return findOrThrow(visitId).toResponse();
   }
 
+  /**
+   * Редагує текстові результати прийому; змінювати може лише його автор.
+   *
+   * @param doctorId лікар із токена
+   * @param visitId ідентифікатор прийому
+   * @param request передані поля
+   * @return оновлений прийом
+   * @throws EmptyBodyException якщо тіло не містить жодного поля
+   * @throws RequestValidationException якщо передано {@code medications} або діагноз {@code null}
+   * @throws ResourceNotFoundException якщо прийому немає
+   * @throws ForbiddenException {@code NOT_VISIT_AUTHOR}, якщо прийом створив інший лікар
+   * @throws ConflictException {@code PATIENT_ARCHIVED}, якщо картку пацієнта архівовано
+   */
   @Transactional
   VisitResponse update(UUID doctorId, UUID visitId, UpdateVisitRequest request) {
     if (request.isEmpty()) {
@@ -157,6 +197,15 @@ class VisitService {
     return updated;
   }
 
+  /**
+   * Повертає хронологію прийомів пацієнта, новіші спочатку.
+   *
+   * @param patientId ідентифікатор пацієнта
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки
+   * @return сторінка прийомів
+   * @throws ResourceNotFoundException якщо пацієнта немає
+   */
   @Transactional(readOnly = true)
   VisitPage listByPatient(UUID patientId, int page, int pageSize) {
     if (patients.find(patientId).isEmpty()) {

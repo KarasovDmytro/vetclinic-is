@@ -6,6 +6,11 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+/**
+ * Створює першого адміністратора під час запуску, якщо задано {@code
+ * vetclinic.bootstrap.admin-email} і {@code vetclinic.bootstrap.admin-password}, а користувача з
+ * таким email ще немає.
+ */
 @Component
 class InitialAdminSeeder implements ApplicationRunner {
 

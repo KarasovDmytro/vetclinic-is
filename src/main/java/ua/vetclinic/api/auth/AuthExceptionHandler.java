@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ua.vetclinic.api.common.ErrorResponse;
 
+/**
+ * Перетворює винятки входу на відповіді 401 {@code INVALID_CREDENTIALS} і 403 {@code
+ * ACCOUNT_DEACTIVATED} у форматі {@link ErrorResponse}.
+ */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class AuthExceptionHandler {

@@ -29,6 +29,12 @@ final class ClinicSchedule {
 
   private ClinicSchedule() {}
 
+  /**
+   * Перевіряє, чи день робочий для клініки (AD-25).
+   *
+   * @param day календарний день у часовому поясі клініки
+   * @return {@code false} для суботи й неділі
+   */
   static boolean isWorkingDay(LocalDate day) {
     return !NON_WORKING_DAYS.contains(day.getDayOfWeek());
   }
@@ -53,6 +59,12 @@ final class ClinicSchedule {
     return Optional.empty();
   }
 
+  /**
+   * Повертає початки всіх слотів робочого дня з 09:00 до 18:00.
+   *
+   * @param day день у часовому поясі клініки
+   * @return 18 початків слотів у порядку зростання
+   */
   static List<ZonedDateTime> slotStartsOf(LocalDate day) {
     List<ZonedDateTime> starts = new ArrayList<>();
     LocalTime time = WORK_START;

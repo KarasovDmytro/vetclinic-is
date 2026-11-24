@@ -51,6 +51,16 @@ public final class TestAppointments {
     return createPatient(mockMvc, ownerId, patientName, "Кіт");
   }
 
+  /**
+   * Створює запис на прийом від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param doctorId лікар
+   * @param patientId пацієнт
+   * @param startsAt початок слота у форматі ISO 8601, див. {@link #slot}
+   * @return ідентифікатор створеного запису
+   * @throws Exception якщо запит не повернув 201
+   */
   public static String createAppointment(
       MockMvc mockMvc, String doctorId, String patientId, String startsAt) throws Exception {
     String requestBody =
@@ -70,6 +80,13 @@ public final class TestAppointments {
     return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
   }
 
+  /**
+   * Скасовує запис від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param appointmentId запис
+   * @throws Exception якщо запит не повернув 200
+   */
   public static void cancelAppointment(MockMvc mockMvc, String appointmentId) throws Exception {
     mockMvc
         .perform(

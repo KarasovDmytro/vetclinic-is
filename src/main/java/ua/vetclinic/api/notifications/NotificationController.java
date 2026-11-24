@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST-ресурс сповіщень про низький залишок {@code /api/v1/notifications}; доступний лише
+ * адміністратору.
+ */
 @RestController
 @RequestMapping("/api/v1/notifications")
 class NotificationController {
@@ -20,6 +24,14 @@ class NotificationController {
     this.notificationService = notificationService;
   }
 
+  /**
+   * Повертає сторінку сповіщень, новіші спочатку (операція {@code listNotifications}, REQ-F-047).
+   *
+   * @param read фільтр за ознакою прочитання або {@code null} для всіх
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки, від 1 до 100
+   * @return сторінка сповіщень
+   */
   @GetMapping
   NotificationPage listNotifications(
       @RequestParam(required = false) Boolean read,
@@ -28,6 +40,12 @@ class NotificationController {
     return notificationService.list(read, page, pageSize);
   }
 
+  /**
+   * Позначає сповіщення прочитаним (операція {@code markNotificationRead}, REQ-F-047).
+   *
+   * @param notificationId ідентифікатор сповіщення
+   * @return сповіщення з {@code read = true}
+   */
   @PostMapping("/{notificationId}/mark-read")
   NotificationResponse markNotificationRead(@PathVariable UUID notificationId) {
     return notificationService.markRead(notificationId);

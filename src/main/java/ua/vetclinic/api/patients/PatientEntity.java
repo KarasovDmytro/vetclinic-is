@@ -9,6 +9,11 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * JPA-сутність пацієнта (таблиця {@code patients}): тварина, прив'язана рівно до одного власника.
+ *
+ * <p>Архівація лише змінює статус: медична картка ніколи не видаляється фізично (SRS §3).
+ */
 @Entity
 @Table(name = "patients")
 class PatientEntity {
@@ -73,11 +78,22 @@ class PatientEntity {
     return status == PatientStatus.ARCHIVED;
   }
 
+  /**
+   * Переводить картку в статус «Архівна».
+   *
+   * @param now час зміни
+   */
   void archive(OffsetDateTime now) {
     this.status = PatientStatus.ARCHIVED;
     this.updatedAt = now;
   }
 
+  /**
+   * Застосовує передані в PATCH поля; відсутні поля не змінюються.
+   *
+   * @param changes поля запиту
+   * @param now час зміни
+   */
   void apply(UpdatePatientRequest changes, OffsetDateTime now) {
     if (changes.isProvided("name")) {
       this.name = changes.name();

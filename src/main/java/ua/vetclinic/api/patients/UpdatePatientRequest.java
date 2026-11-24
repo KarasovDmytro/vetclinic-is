@@ -33,35 +33,72 @@ public class UpdatePatientRequest {
 
   private LocalDate birthDate;
 
+  /**
+   * Приймає кличку з JSON і позначає поле переданим.
+   *
+   * @param name нова кличка; {@code null} відхиляється як обов'язкове поле
+   */
   public void setName(String name) {
     this.name = Strings.strip(name);
     provided.add("name");
   }
 
+  /**
+   * Приймає вид з JSON і позначає поле переданим.
+   *
+   * @param species новий вид; {@code null} відхиляється як обов'язкове поле
+   */
   public void setSpecies(String species) {
     this.species = Strings.strip(species);
     provided.add("species");
   }
 
+  /**
+   * Приймає породу з JSON і позначає поле переданим.
+   *
+   * @param breed нова порода або {@code null}, щоб її очистити
+   */
   public void setBreed(String breed) {
     this.breed = Strings.strip(breed);
     provided.add("breed");
   }
 
+  /**
+   * Приймає стать з JSON і позначає поле переданим.
+   *
+   * @param sex нова стать; {@code null} відхиляється як обов'язкове поле
+   */
   public void setSex(Sex sex) {
     this.sex = sex;
     provided.add("sex");
   }
 
+  /**
+   * Приймає дату народження з JSON і позначає поле переданим.
+   *
+   * @param birthDate нова дата або {@code null}, щоб її очистити
+   */
   public void setBirthDate(LocalDate birthDate) {
     this.birthDate = birthDate;
     provided.add("birthDate");
   }
 
+  /**
+   * Фіксує спробу змінити власника, щоб відхилити її з причиною {@code IMMUTABLE_FIELD}
+   * (REQ-F-014).
+   *
+   * @param ignored значення з JSON, не використовується
+   */
   public void setOwnerId(Object ignored) {
     immutableProvided.add("ownerId");
   }
 
+  /**
+   * Фіксує спробу змінити статус через PATCH, щоб відхилити її з причиною {@code IMMUTABLE_FIELD};
+   * архівація виконується окремою операцією.
+   *
+   * @param ignored значення з JSON, не використовується
+   */
   public void setStatus(Object ignored) {
     immutableProvided.add("status");
   }

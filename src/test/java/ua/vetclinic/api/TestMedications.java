@@ -23,6 +23,16 @@ public final class TestMedications {
     return prefix + " " + UUID.randomUUID();
   }
 
+  /**
+   * Додає медикамент до каталогу від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param name унікальна назва, див. {@link #uniqueName}
+   * @param quantity початковий залишок
+   * @param minThreshold поріг або {@code null}
+   * @return ідентифікатор створеного медикаменту
+   * @throws Exception якщо запит не повернув 201
+   */
   public static String createMedication(
       MockMvc mockMvc, String name, int quantity, Integer minThreshold) throws Exception {
     String threshold = minThreshold == null ? "" : ", \"minThreshold\": " + minThreshold;
@@ -40,6 +50,14 @@ public final class TestMedications {
     return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
   }
 
+  /**
+   * Читає поточний залишок медикаменту через API.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param medicationId медикамент
+   * @return значення поля {@code quantity}
+   * @throws Exception якщо запит не повернув 200
+   */
   public static int quantityOf(MockMvc mockMvc, String medicationId) throws Exception {
     var response =
         mockMvc

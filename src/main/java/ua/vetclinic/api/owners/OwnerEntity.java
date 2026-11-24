@@ -6,6 +6,7 @@ import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/** JPA-сутність власника тварини (таблиця {@code owners}); власника не видаляють. */
 @Entity
 @Table(name = "owners")
 class OwnerEntity {
@@ -47,6 +48,13 @@ class OwnerEntity {
     return new OwnerResponse(id, fullName, phone, email, address, createdAt, updatedAt);
   }
 
+  /**
+   * Застосовує передані в PATCH поля; обов'язкові поля {@code fullName} і {@code phone} не
+   * очищаються.
+   *
+   * @param changes поля запиту
+   * @param now час зміни
+   */
   void apply(UpdateOwnerRequest changes, OffsetDateTime now) {
     if (changes.isProvided("fullName") && changes.fullName() != null) {
       this.fullName = changes.fullName();

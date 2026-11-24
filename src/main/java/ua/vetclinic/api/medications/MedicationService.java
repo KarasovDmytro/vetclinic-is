@@ -19,6 +19,10 @@ import ua.vetclinic.api.common.RequestValidationException;
 import ua.vetclinic.api.common.ResourceNotFoundException;
 import ua.vetclinic.api.common.Strings;
 
+/**
+ * Бізнес-логіка каталогу медикаментів: унікальність назви, ручне коригування залишку в межах від 0
+ * до 1 000 000 і журнал аудиту кожної зміни.
+ */
 @Service
 class MedicationService {
 
@@ -37,6 +41,14 @@ class MedicationService {
     this.auditLog = auditLog;
   }
 
+  /**
+   * Додає медикамент до каталогу.
+   *
+   * @param request назва, залишок і поріг
+   * @return створений медикамент
+   * @throws ConflictException {@code MEDICATION_NAME_TAKEN}, якщо назва вже є (без урахування
+   *     регістру)
+   */
   MedicationResponse create(CreateMedicationRequest request) {
     if (medicationRepository.existsByNameIgnoreCase(request.name())) {
       throw failed("MEDICATION_CREATED", null, NAME_TAKEN, nameTaken());
@@ -53,10 +65,28 @@ class MedicationService {
     return created;
   }
 
+  /**
+   * Повертає медикамент за ідентифікатором.
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @return медикамент
+   * @throws ResourceNotFoundException якщо медикаменту немає
+   */
   MedicationResponse get(UUID medicationId) {
     return findOrThrow(medicationId).toResponse();
   }
 
+  /**
+   * Змінює назву та/або поріг; спроба передати {@code quantity} відхиляється (AD-08.3).
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @param request поля для зміни
+   * @return оновлений медикамент
+   * @throws EmptyBodyException якщо тіло не містить жодного поля
+   * @throws RequestValidationException якщо передано {@code quantity} або назва {@code null}
+   * @throws ResourceNotFoundException якщо медикаменту немає
+   * @throws ConflictException {@code MEDICATION_NAME_TAKEN}, якщо нова назва вже є
+   */
   MedicationResponse update(UUID medicationId, UpdateMedicationRequest request) {
     if (request.isEmpty()) {
       throw failed("MEDICATION_UPDATED", medicationId, VALIDATION_ERROR, new EmptyBodyException());
@@ -80,6 +110,16 @@ class MedicationService {
     return updated;
   }
 
+  /**
+   * Змінює залишок на {@code delta} під блокуванням рядка (REQ-F-042, REQ-F-048).
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @param request зміна залишку
+   * @return медикамент з новим залишком
+   * @throws RequestValidationException якщо зміна нульова або результат перевищує 1 000 000
+   * @throws ResourceNotFoundException якщо медикаменту немає
+   * @throws ConflictException {@code NEGATIVE_STOCK}, якщо залишок став би від'ємним
+   */
   @Transactional
   MedicationResponse adjustStock(UUID medicationId, StockAdjustmentRequest request) {
     int delta = request.delta();
@@ -118,6 +158,15 @@ class MedicationService {
     return adjusted;
   }
 
+  /**
+   * Повертає сторінку каталогу за фільтрами.
+   *
+   * @param query підрядок назви або {@code null}
+   * @param lowStock фільтр за ознакою низького залишку або {@code null}
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки
+   * @return сторінка медикаментів, відсортованих за назвою
+   */
   MedicationPage list(String query, Boolean lowStock, int page, int pageSize) {
     Specification<MedicationEntity> filter = Specification.unrestricted();
     if (query != null) {

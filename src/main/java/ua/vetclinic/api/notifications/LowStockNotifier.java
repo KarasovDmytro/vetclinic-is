@@ -20,7 +20,12 @@ public class LowStockNotifier {
 
   /**
    * Створює сповіщення, якщо для препарату ще немає непрочитаного (AD-02.3); викликається в
-   * транзакції прийому.
+   * транзакції прийому. Подія фіксується в аудиті як системна.
+   *
+   * @param medicationId медикамент
+   * @param medicationName назва медикаменту
+   * @param quantity залишок після списання
+   * @param minThreshold поріг, нижче якого опинився залишок
    */
   public void notifyLowStock(
       UUID medicationId, String medicationName, int quantity, Integer minThreshold) {

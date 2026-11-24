@@ -20,6 +20,13 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import tools.jackson.databind.ObjectMapper;
 import ua.vetclinic.api.common.ErrorResponse;
 
+/**
+ * Налаштування Spring Security: stateless-автентифікація bearer-токеном і доступ до ендпоінтів за
+ * ролями {@code ADMIN} та {@code VETERINARIAN} (REQ-F-004, REQ-NF-002).
+ *
+ * <p>Відповіді 401 і 403 мають той самий формат {@code ErrorResponse}, що й решта помилок API;
+ * відповідь 401 містить заголовок {@code WWW-Authenticate: Bearer}.
+ */
 @Configuration
 class SecurityConfig {
 
@@ -37,6 +44,15 @@ class SecurityConfig {
     return new BCryptPasswordEncoder(10);
   }
 
+  /**
+   * Описує правила доступу до ендпоінтів за ролями. Порядок правил важливий: спершу дозволи на
+   * читання для обох ролей, потім обмеження змін адміністратором.
+   *
+   * @param http конструктор налаштувань безпеки
+   * @param objectMapper серіалізатор тіла помилок 401 і 403
+   * @return ланцюжок фільтрів безпеки
+   * @throws Exception якщо налаштування не вдалося зібрати
+   */
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper)
       throws Exception {

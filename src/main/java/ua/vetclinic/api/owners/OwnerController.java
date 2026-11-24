@@ -16,6 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST-ресурс власників {@code /api/v1/owners}.
+ *
+ * <p>Реєструє й редагує власників адміністратор; лікар має доступ лише на читання.
+ */
 @RestController
 @RequestMapping("/api/v1/owners")
 class OwnerController {
@@ -26,12 +31,26 @@ class OwnerController {
     this.ownerService = ownerService;
   }
 
+  /**
+   * Реєструє власника (операція {@code createOwner}, REQ-F-010).
+   *
+   * @param request дані власника
+   * @return 201 зі створеним власником і заголовком {@code Location}
+   */
   @PostMapping
   ResponseEntity<OwnerResponse> createOwner(@Valid @RequestBody CreateOwnerRequest request) {
     OwnerResponse body = ownerService.create(request);
     return ResponseEntity.created(URI.create("/api/v1/owners/" + body.id())).body(body);
   }
 
+  /**
+   * Шукає власників за ПІБ (операція {@code listOwners}, REQ-F-017, REQ-NF-003).
+   *
+   * @param q підрядок ПІБ без урахування регістру, від 2 до 100 символів
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки, від 1 до 100
+   * @return сторінка власників, відсортованих за ПІБ
+   */
   @GetMapping
   OwnerPage listOwners(
       @RequestParam(required = false) @Size(min = 2, max = 100) String q,
@@ -40,11 +59,24 @@ class OwnerController {
     return ownerService.list(q, page, pageSize);
   }
 
+  /**
+   * Повертає власника за ідентифікатором (операція {@code getOwner}, REQ-F-010).
+   *
+   * @param ownerId ідентифікатор власника
+   * @return власник
+   */
   @GetMapping("/{ownerId}")
   OwnerResponse getOwner(@PathVariable UUID ownerId) {
     return ownerService.get(ownerId);
   }
 
+  /**
+   * Частково оновлює дані власника (операція {@code updateOwner}, REQ-F-011).
+   *
+   * @param ownerId ідентифікатор власника
+   * @param request передані поля; явний {@code null} очищає необов'язкове поле
+   * @return оновлений власник
+   */
   @PatchMapping("/{ownerId}")
   OwnerResponse updateOwner(
       @PathVariable UUID ownerId, @Valid @RequestBody UpdateOwnerRequest request) {

@@ -21,6 +21,13 @@ import ua.vetclinic.api.common.ResourceNotFoundException;
 import ua.vetclinic.api.common.Strings;
 import ua.vetclinic.api.owners.OwnerLookup;
 
+/**
+ * Бізнес-логіка пацієнтів: реєстрація з прив'язкою до власника, редагування базових даних,
+ * архівація картки та пошук.
+ *
+ * <p>Перед архівацією опитуються всі {@link PatientArchiveGuard}; поки є заплановані записи,
+ * архівація заборонена (AD-04.2).
+ */
 @Service
 class PatientService {
 
@@ -43,6 +50,13 @@ class PatientService {
     this.archiveGuards = archiveGuards;
   }
 
+  /**
+   * Реєструє пацієнта з активною карткою.
+   *
+   * @param request дані тварини та власник
+   * @return створений пацієнт
+   * @throws RequestValidationException якщо власника не знайдено або дата народження в майбутньому
+   */
   PatientResponse create(CreatePatientRequest request) {
     List<ErrorDetail> errors = new ArrayList<>();
     if (!ownerLookup.exists(request.ownerId())) {
@@ -68,10 +82,28 @@ class PatientService {
     return created;
   }
 
+  /**
+   * Повертає пацієнта за ідентифікатором.
+   *
+   * @param patientId ідентифікатор пацієнта
+   * @return пацієнт
+   * @throws ResourceNotFoundException якщо пацієнта немає
+   */
   PatientResponse get(UUID patientId) {
     return findOrThrow(patientId).toResponse();
   }
 
+  /**
+   * Частково оновлює базові дані пацієнта.
+   *
+   * @param patientId ідентифікатор пацієнта
+   * @param request передані поля
+   * @return оновлений пацієнт
+   * @throws EmptyBodyException якщо тіло не містить жодного поля
+   * @throws RequestValidationException якщо передано {@code ownerId} чи {@code status}, обов'язкове
+   *     поле {@code null} або дата народження в майбутньому
+   * @throws ResourceNotFoundException якщо пацієнта немає
+   */
   PatientResponse update(UUID patientId, UpdatePatientRequest request) {
     if (request.isEmpty()) {
       auditLog.failure("PATIENT_UPDATED", "PATIENT", patientId, "VALIDATION_ERROR");
@@ -87,6 +119,15 @@ class PatientService {
     return updated;
   }
 
+  /**
+   * Переводить картку пацієнта в статус «Архівна».
+   *
+   * @param patientId ідентифікатор пацієнта
+   * @return пацієнт зі статусом {@code ARCHIVED}
+   * @throws ResourceNotFoundException якщо пацієнта немає
+   * @throws ConflictException {@code PATIENT_ARCHIVED}, якщо картку вже архівовано, або {@code
+   *     PATIENT_HAS_SCHEDULED_APPOINTMENTS}, якщо є заплановані записи
+   */
   PatientResponse archive(UUID patientId) {
     PatientEntity patient = findOrThrow(patientId);
     if (patient.isArchived()) {
@@ -105,6 +146,16 @@ class PatientService {
     return archived;
   }
 
+  /**
+   * Повертає сторінку пацієнтів за фільтрами.
+   *
+   * @param query підрядок клички або {@code null}
+   * @param ownerId фільтр за власником або {@code null}
+   * @param status фільтр за статусом картки або {@code null}
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки
+   * @return сторінка пацієнтів, відсортованих за кличкою
+   */
   PatientPage list(String query, UUID ownerId, PatientStatus status, int page, int pageSize) {
     Specification<PatientEntity> filter = Specification.unrestricted();
     if (query != null) {

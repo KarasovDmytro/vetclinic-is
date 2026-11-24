@@ -22,6 +22,13 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import tools.jackson.databind.exc.InvalidFormatException;
 import tools.jackson.databind.exc.UnrecognizedPropertyException;
 
+/**
+ * Єдиний формат помилок API (addendum-002): перетворює винятки Spring MVC і бізнес-логіки на {@link
+ * ErrorResponse} з відповідним HTTP-статусом.
+ *
+ * <p>Помилки валідації (422 {@code VALIDATION_ERROR}) містять перелік {@link ErrorDetail} з полем і
+ * стабільною причиною ({@code REQUIRED}, {@code TOO_LONG}, {@code UNKNOWN_FIELD} тощо).
+ */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class ApiExceptionHandler {
@@ -49,6 +56,15 @@ class ApiExceptionHandler {
         request);
   }
 
+  /**
+   * Розрізняє причини нерозбірного тіла: невідоме поле дає 422 {@code UNKNOWN_FIELD}, недопустиме
+   * значення enum — 422 {@code INVALID_ENUM}, решта (зламаний JSON, невірний тип) — 400 {@code
+   * MALFORMED_REQUEST}.
+   *
+   * @param exception помилка розбору тіла
+   * @param request поточний запит
+   * @return відповідь 422 або 400
+   */
   @ExceptionHandler(HttpMessageNotReadableException.class)
   ResponseEntity<ErrorResponse> handleUnreadableBody(
       HttpMessageNotReadableException exception, HttpServletRequest request) {

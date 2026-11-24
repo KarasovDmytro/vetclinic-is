@@ -13,6 +13,12 @@ public class OwnerLookup {
     this.ownerRepository = ownerRepository;
   }
 
+  /**
+   * Перевіряє, чи зареєстровано власника (для прив'язки пацієнта).
+   *
+   * @param ownerId ідентифікатор власника
+   * @return {@code true}, якщо власник існує
+   */
   public boolean exists(UUID ownerId) {
     return ownerRepository.existsById(ownerId);
   }

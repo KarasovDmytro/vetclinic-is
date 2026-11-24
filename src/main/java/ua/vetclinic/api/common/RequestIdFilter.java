@@ -12,6 +12,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Присвоює кожному запиту {@code requestId} (AD-21): повертає його в заголовку {@code
+ * X-Request-Id}, кладе в атрибут запиту для {@link ErrorResponse} і в MDC для журналів.
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class RequestIdFilter extends OncePerRequestFilter {

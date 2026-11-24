@@ -14,6 +14,10 @@ import ua.vetclinic.api.common.ErrorDetail;
 import ua.vetclinic.api.common.RequestValidationException;
 import ua.vetclinic.api.common.ResourceNotFoundException;
 
+/**
+ * Бізнес-логіка власників: реєстрація, редагування, пошук і журнал аудиту змін без персональних
+ * даних.
+ */
 @Service
 class OwnerService {
 
@@ -26,6 +30,12 @@ class OwnerService {
     this.auditLog = auditLog;
   }
 
+  /**
+   * Реєструє власника.
+   *
+   * @param request дані власника
+   * @return створений власник
+   */
   OwnerResponse create(CreateOwnerRequest request) {
     OffsetDateTime now = OffsetDateTime.now();
     OwnerEntity owner =
@@ -42,10 +52,28 @@ class OwnerService {
     return created;
   }
 
+  /**
+   * Повертає власника за ідентифікатором.
+   *
+   * @param ownerId ідентифікатор власника
+   * @return власник
+   * @throws ResourceNotFoundException якщо власника немає
+   */
   OwnerResponse get(UUID ownerId) {
     return findOrThrow(ownerId).toResponse();
   }
 
+  /**
+   * Частково оновлює дані власника.
+   *
+   * @param ownerId ідентифікатор власника
+   * @param request передані поля
+   * @return оновлений власник
+   * @throws EmptyBodyException якщо тіло не містить жодного поля
+   * @throws RequestValidationException якщо {@code fullName} або {@code phone} передано як {@code
+   *     null}
+   * @throws ResourceNotFoundException якщо власника немає
+   */
   OwnerResponse update(UUID ownerId, UpdateOwnerRequest request) {
     if (request.isEmpty()) {
       auditLog.failure("OWNER_UPDATED", "OWNER", ownerId, "VALIDATION_ERROR");
@@ -63,6 +91,14 @@ class OwnerService {
     return updated;
   }
 
+  /**
+   * Повертає сторінку власників, за потреби відфільтровану за підрядком ПІБ.
+   *
+   * @param query підрядок ПІБ або {@code null}
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки
+   * @return сторінка власників, відсортованих за ПІБ
+   */
   OwnerPage list(String query, int page, int pageSize) {
     Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("fullName", "id"));
     Page<OwnerEntity> owners =

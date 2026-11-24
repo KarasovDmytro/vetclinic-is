@@ -17,10 +17,22 @@ public class PatientLookup {
     this.patientRepository = patientRepository;
   }
 
+  /**
+   * Знаходить пацієнта за ідентифікатором.
+   *
+   * @param patientId ідентифікатор пацієнта
+   * @return пацієнт або порожньо, якщо його немає
+   */
   public Optional<PatientInfo> find(UUID patientId) {
     return patientRepository.findById(patientId).map(PatientEntity::toInfo);
   }
 
+  /**
+   * Повертає клички пацієнтів одним запитом (для сітки розкладу).
+   *
+   * @param patientIds ідентифікатори пацієнтів
+   * @return кличка за ідентифікатором; відсутні пацієнти пропускаються
+   */
   public Map<UUID, String> namesOf(Collection<UUID> patientIds) {
     Map<UUID, String> names = new HashMap<>();
     patientRepository

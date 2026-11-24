@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/** Сховище прийомів. */
 interface VisitRepository extends JpaRepository<VisitEntity, UUID> {
 
   Page<VisitEntity> findByPatientId(UUID patientId, Pageable pageable);

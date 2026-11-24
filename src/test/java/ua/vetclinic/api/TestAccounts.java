@@ -16,11 +16,32 @@ public final class TestAccounts {
 
   private TestAccounts() {}
 
+  /**
+   * Створює обліковий запис з паролем {@link #DEFAULT_PASSWORD} від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param email унікальний email
+   * @param fullName ПІБ
+   * @param role {@code ADMIN} або {@code VETERINARIAN}
+   * @return ідентифікатор створеного користувача
+   * @throws Exception якщо запит не повернув 201
+   */
   public static String createUser(MockMvc mockMvc, String email, String fullName, String role)
       throws Exception {
     return createUser(mockMvc, email, fullName, role, DEFAULT_PASSWORD);
   }
 
+  /**
+   * Створює обліковий запис із заданим паролем від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param email унікальний email
+   * @param fullName ПІБ
+   * @param role {@code ADMIN} або {@code VETERINARIAN}
+   * @param password пароль від 8 до 72 символів
+   * @return ідентифікатор створеного користувача
+   * @throws Exception якщо запит не повернув 201
+   */
   public static String createUser(
       MockMvc mockMvc, String email, String fullName, String role, String password)
       throws Exception {
@@ -47,6 +68,15 @@ public final class TestAccounts {
     return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
   }
 
+  /**
+   * Виконує вхід і повертає bearer-токен.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param email email користувача
+   * @param password пароль користувача
+   * @return значення {@code accessToken} з відповіді
+   * @throws Exception якщо запит не повернув 200
+   */
   public static String loginAndGetToken(MockMvc mockMvc, String email, String password)
       throws Exception {
     String loginBody =

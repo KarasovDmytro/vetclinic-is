@@ -13,6 +13,12 @@ import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.users.UserAccount;
 import ua.vetclinic.api.users.UserAccounts;
 
+/**
+ * Вхід у систему: перевірка облікових даних і випуск JWT із терміном дії 8 годин (addendum-001).
+ *
+ * <p>Невідомий email і хибний пароль дають однакову помилку, щоб не розкривати наявність облікового
+ * запису. Кожна спроба фіксується в журналі аудиту.
+ */
 @Service
 class AuthService {
 
@@ -37,6 +43,14 @@ class AuthService {
     this.auditLog = auditLog;
   }
 
+  /**
+   * Перевіряє облікові дані та видає токен із claim {@code role}.
+   *
+   * @param request email і пароль
+   * @return токен, його тип, термін дії в секундах і дані користувача
+   * @throws InvalidCredentialsException якщо email не знайдено або пароль хибний
+   * @throws AccountDeactivatedException якщо обліковий запис деактивовано
+   */
   LoginResponse login(LoginRequest request) {
     UserAccount account = userAccounts.findByEmail(request.email()).orElse(null);
     if (account == null) {

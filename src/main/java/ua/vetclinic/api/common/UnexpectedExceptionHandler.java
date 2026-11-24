@@ -10,6 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Останній рубіж обробки помилок: будь-який неочікуваний виняток дає 500 {@code INTERNAL_ERROR} без
+ * технічних деталей, а стек пишеться в журнал разом із {@code traceId}.
+ */
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
 class UnexpectedExceptionHandler {

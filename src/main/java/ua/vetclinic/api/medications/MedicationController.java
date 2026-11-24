@@ -16,6 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST-ресурс каталогу медикаментів {@code /api/v1/medications}.
+ *
+ * <p>Каталог веде лише адміністратор; лікар може переглядати його, щоб обрати препарати для
+ * прийому.
+ */
 @RestController
 @RequestMapping("/api/v1/medications")
 class MedicationController {
@@ -26,6 +32,12 @@ class MedicationController {
     this.medicationService = medicationService;
   }
 
+  /**
+   * Додає медикамент до каталогу (операція {@code createMedication}, REQ-F-040, REQ-F-043).
+   *
+   * @param request назва, початковий залишок і поріг
+   * @return 201 зі створеним медикаментом і заголовком {@code Location}
+   */
   @PostMapping
   ResponseEntity<MedicationResponse> createMedication(
       @Valid @RequestBody CreateMedicationRequest request) {
@@ -33,6 +45,15 @@ class MedicationController {
     return ResponseEntity.created(URI.create("/api/v1/medications/" + body.id())).body(body);
   }
 
+  /**
+   * Повертає сторінку каталогу (операція {@code listMedications}, REQ-F-044).
+   *
+   * @param q підрядок назви без урахування регістру, від 2 до 100 символів
+   * @param lowStock {@code true} — лише позиції із залишком нижче порогу, {@code false} — решта
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки, від 1 до 100
+   * @return сторінка медикаментів, відсортованих за назвою
+   */
   @GetMapping
   MedicationPage listMedications(
       @RequestParam(required = false) @Size(min = 2, max = 100) String q,
@@ -42,17 +63,39 @@ class MedicationController {
     return medicationService.list(q, lowStock, page, pageSize);
   }
 
+  /**
+   * Повертає медикамент за ідентифікатором (операція {@code getMedication}, REQ-F-040).
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @return медикамент
+   */
   @GetMapping("/{medicationId}")
   MedicationResponse getMedication(@PathVariable UUID medicationId) {
     return medicationService.get(medicationId);
   }
 
+  /**
+   * Змінює назву та/або поріг медикаменту (операція {@code updateMedication}, REQ-F-041,
+   * REQ-F-043). Залишок цим запитом не змінюється.
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @param request поля для зміни
+   * @return оновлений медикамент
+   */
   @PatchMapping("/{medicationId}")
   MedicationResponse updateMedication(
       @PathVariable UUID medicationId, @Valid @RequestBody UpdateMedicationRequest request) {
     return medicationService.update(medicationId, request);
   }
 
+  /**
+   * Коригує залишок на задану зміну, наприклад після надходження чи інвентаризації (операція {@code
+   * adjustMedicationStock}, REQ-F-042).
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @param request зміна залишку
+   * @return медикамент з новим залишком
+   */
   @PostMapping("/{medicationId}/adjust-stock")
   MedicationResponse adjustMedicationStock(
       @PathVariable UUID medicationId, @Valid @RequestBody StockAdjustmentRequest request) {

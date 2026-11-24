@@ -15,24 +15,37 @@ public final class LogCapture {
 
   private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
 
+  /** Створює перехоплювач журналу аудиту {@code AUDIT}. */
   public LogCapture() {
     this(AUDIT_LOGGER_NAME);
   }
 
+  /**
+   * Створює перехоплювач указаного логера, наприклад {@code HTTP}.
+   *
+   * @param loggerName ім'я логера
+   */
   public LogCapture(String loggerName) {
     this.logger = (Logger) LoggerFactory.getLogger(loggerName);
   }
 
+  /** Починає збирати події; викликається перед дією, що перевіряється. */
   public void start() {
     appender.start();
     logger.addAppender(appender);
   }
 
+  /** Від'єднує перехоплювач від логера; викликається після тесту. */
   public void stop() {
     logger.detachAppender(appender);
     appender.stop();
   }
 
+  /**
+   * Повертає зібрані події як відформатовані рядки.
+   *
+   * @return рядки журналу в порядку запису
+   */
   public List<String> lines() {
     return appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
   }

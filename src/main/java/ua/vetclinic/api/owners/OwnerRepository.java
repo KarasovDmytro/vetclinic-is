@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/** Сховище власників. */
 interface OwnerRepository extends JpaRepository<OwnerEntity, UUID> {
 
   Page<OwnerEntity> findByFullNameContainingIgnoreCase(String fullName, Pageable pageable);

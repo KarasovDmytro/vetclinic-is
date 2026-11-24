@@ -13,6 +13,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Пише в логер {@code HTTP} один рядок на запит: метод, шлях, статус, тривалість і {@code
+ * requestId} (AD-21.5).
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 class RequestLogFilter extends OncePerRequestFilter {

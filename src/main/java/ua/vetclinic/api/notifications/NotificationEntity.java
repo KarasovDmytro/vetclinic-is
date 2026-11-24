@@ -7,6 +7,12 @@ import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * JPA-сутність сповіщення про низький залишок (таблиця {@code notifications}).
+ *
+ * <p>Назва й залишок препарату зберігаються на момент створення, тому сповіщення не змінюється при
+ * подальших змінах каталогу.
+ */
 @Entity
 @Table(name = "notifications")
 class NotificationEntity {
@@ -51,6 +57,7 @@ class NotificationEntity {
     return id;
   }
 
+  /** Позначає сповіщення прочитаним; повторний виклик нічого не змінює. */
   void markRead() {
     this.read = true;
   }

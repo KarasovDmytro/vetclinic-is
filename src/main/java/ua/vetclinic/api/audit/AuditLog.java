@@ -9,12 +9,28 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
-/** Журнал аудиту (REQ-NF-006, AD-22): одна структурована подія в рядок, іменований логер AUDIT. */
+/**
+ * Журнал аудиту (REQ-NF-006, AD-22): одна структурована подія в рядок, іменований логер {@code
+ * AUDIT}.
+ *
+ * <p>Кожна подія містить назву дії, виконавця, сутність, результат {@code SUCCESS} або {@code
+ * FAILURE} та {@code requestId} запиту. Персональні дані (ПІБ, телефон, ім'я тварини) у журнал не
+ * потрапляють.
+ */
 @Component
 public class AuditLog {
 
   private static final Logger AUDIT = LoggerFactory.getLogger("AUDIT");
 
+  /**
+   * Фіксує успішну дію з явно вказаним виконавцем (вхід у систему, системні події).
+   *
+   * @param event назва події, наприклад {@code LOGIN_SUCCESS}
+   * @param actorId виконавець або {@code null} для системної події
+   * @param actorRole роль виконавця, наприклад {@code ADMIN} чи {@code SYSTEM}
+   * @param entityType тип сутності, наприклад {@code USER}
+   * @param entityId ідентифікатор сутності
+   */
   public void success(
       String event, UUID actorId, String actorRole, String entityType, UUID entityId) {
     AUDIT.info(

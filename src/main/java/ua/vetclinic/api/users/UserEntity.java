@@ -8,6 +8,10 @@ import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * JPA-сутність облікового запису (таблиця {@code users}); лікарі — це користувачі з роллю {@link
+ * Role#VETERINARIAN}.
+ */
 @Entity
 @Table(name = "users")
 class UserEntity {
@@ -62,6 +66,7 @@ class UserEntity {
     return new DoctorInfo(id, fullName, active);
   }
 
+  /** Деактивує користувача: він більше не може увійти, а видані токени перестають діяти. */
   void deactivate() {
     this.active = false;
   }

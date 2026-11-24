@@ -12,6 +12,12 @@ import java.util.List;
 import java.util.UUID;
 import org.hibernate.annotations.BatchSize;
 
+/**
+ * JPA-сутність прийому (таблиця {@code visits}) з переліком витрачених препаратів (таблиця {@code
+ * visit_medications}).
+ *
+ * <p>Дата прийому дорівнює початку слота запису. Перелік препаратів після збереження не змінюється.
+ */
 @Entity
 @Table(name = "visits")
 class VisitEntity {
@@ -80,6 +86,12 @@ class VisitEntity {
     return doctorId;
   }
 
+  /**
+   * Застосовує передані в PATCH текстові поля; перелік препаратів не змінюється.
+   *
+   * @param changes поля запиту
+   * @param now час зміни
+   */
   void apply(UpdateVisitRequest changes, OffsetDateTime now) {
     if (changes.isProvided("diagnosis")) {
       this.diagnosis = changes.diagnosis();

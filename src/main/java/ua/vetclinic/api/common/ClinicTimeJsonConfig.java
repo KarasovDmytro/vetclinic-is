@@ -10,6 +10,7 @@ import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueSerializer;
 import tools.jackson.databind.module.SimpleModule;
 
+/** Серіалізує всі {@code OffsetDateTime} у відповідях у часовому поясі клініки (AD-19.1). */
 @Configuration
 class ClinicTimeJsonConfig {
 

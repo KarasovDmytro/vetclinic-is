@@ -22,6 +22,12 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import ua.vetclinic.api.users.UserAccounts;
 
+/**
+ * Підпис і перевірка JWT алгоритмом HS256 із секретом {@code vetclinic.security.jwt-secret}.
+ *
+ * <p>Крім підпису й терміну дії, декодер перевіряє, що власник токена досі активний, тому
+ * деактивація користувача відкликає його токени одразу (REQ-F-002).
+ */
 @Configuration
 class JwtConfig {
 
@@ -35,6 +41,14 @@ class JwtConfig {
     return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSigningKey));
   }
 
+  /**
+   * Створює декодер, що разом зі стандартними перевірками (підпис, термін дії) відхиляє токени
+   * деактивованих або видалених користувачів.
+   *
+   * @param jwtSigningKey ключ HS256
+   * @param userAccounts джерело ознаки активності користувача
+   * @return декодер bearer-токенів
+   */
   @Bean
   JwtDecoder jwtDecoder(SecretKey jwtSigningKey, UserAccounts userAccounts) {
     NimbusJwtDecoder decoder =

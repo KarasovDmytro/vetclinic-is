@@ -9,6 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 
+/**
+ * Мета-анотація інтеграційного тесту API: повний контекст Spring Boot, {@code MockMvc} і PostgreSQL
+ * у Testcontainers.
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

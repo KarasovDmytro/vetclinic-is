@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/** Сховище облікових записів; email зберігається в нижньому регістрі. */
 interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
   boolean existsByEmail(String email);
@@ -19,6 +20,14 @@ interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
   List<UserEntity> findByRoleAndActiveTrueOrderByFullName(Role role);
 
+  /**
+   * Повертає сторінку користувачів; {@code null} у фільтрі означає «без обмеження».
+   *
+   * @param role роль або {@code null}
+   * @param active ознака активності або {@code null}
+   * @param pageable сторінка й сортування
+   * @return сторінка користувачів
+   */
   @Query(
       """
       select u from UserEntity u

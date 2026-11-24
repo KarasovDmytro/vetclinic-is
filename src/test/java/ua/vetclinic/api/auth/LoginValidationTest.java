@@ -12,7 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.vetclinic.api.ApiIntegrationTest;
 
-/** openapi.yaml, LoginRequest: email ≤254 у форматі адреси, password 1–72. */
+/** {@code openapi.yaml}, LoginRequest: email ≤254 у форматі адреси, password 1–72. */
 @ApiIntegrationTest
 class LoginValidationTest {
 

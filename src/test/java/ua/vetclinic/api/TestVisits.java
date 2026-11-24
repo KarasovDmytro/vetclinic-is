@@ -21,17 +21,40 @@ public final class TestVisits {
   /** Активний лікар, що вже увійшов у систему: id облікового запису та Bearer-токен. */
   public record Doctor(String id, String token) {
 
+    /**
+     * Повертає значення заголовка {@code Authorization}.
+     *
+     * @return {@code Bearer <токен>}
+     */
     public String bearer() {
       return "Bearer " + token;
     }
   }
 
+  /**
+   * Створює нового лікаря з унікальним email і виконує вхід від його імені.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param fullName ПІБ лікаря
+   * @return лікар з ідентифікатором і токеном
+   * @throws Exception якщо створення або вхід не вдалися
+   */
   public static Doctor newDoctor(MockMvc mockMvc, String fullName) throws Exception {
     String email = "visit.doctor." + UUID.randomUUID() + "@clinic.example";
     String id = createUser(mockMvc, email, fullName, "VETERINARIAN", "Vet-Passw0rd-2026");
     return new Doctor(id, loginAndGetToken(mockMvc, email, "Vet-Passw0rd-2026"));
   }
 
+  /**
+   * Надсилає запит на збереження прийому без перевірки відповіді (для негативних сценаріїв).
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param doctor лікар, від імені якого надсилається запит
+   * @param appointmentId запис
+   * @param requestBody JSON тіла запиту
+   * @return результат запиту для подальших перевірок
+   * @throws Exception якщо запит не вдалося виконати
+   */
   public static ResultActions postVisit(
       MockMvc mockMvc, Doctor doctor, String appointmentId, String requestBody) throws Exception {
     return mockMvc.perform(
@@ -47,6 +70,16 @@ public final class TestVisits {
     return createVisit(mockMvc, doctor, appointmentId, DEFAULT_VISIT_BODY);
   }
 
+  /**
+   * Зберігає прийом із заданим тілом і повертає його ідентифікатор.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param doctor лікар запису
+   * @param appointmentId запис
+   * @param requestBody JSON тіла запиту
+   * @return ідентифікатор створеного прийому
+   * @throws Exception якщо запит не повернув 201
+   */
   public static String createVisit(
       MockMvc mockMvc, Doctor doctor, String appointmentId, String requestBody) throws Exception {
     var created =

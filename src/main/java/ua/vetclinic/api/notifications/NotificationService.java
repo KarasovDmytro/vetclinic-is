@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import ua.vetclinic.api.audit.AuditLog;
 import ua.vetclinic.api.common.ResourceNotFoundException;
 
+/** Перегляд сповіщень і позначення їх прочитаними. */
 @Service
 class NotificationService {
 
@@ -21,6 +22,14 @@ class NotificationService {
     this.auditLog = auditLog;
   }
 
+  /**
+   * Повертає сторінку сповіщень, новіші спочатку.
+   *
+   * @param read фільтр за ознакою прочитання або {@code null}
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки
+   * @return сторінка сповіщень
+   */
   NotificationPage list(Boolean read, int page, int pageSize) {
     Pageable pageable =
         PageRequest.of(
@@ -36,6 +45,13 @@ class NotificationService {
         notifications.getContent().stream().map(NotificationEntity::toResponse).toList());
   }
 
+  /**
+   * Позначає сповіщення прочитаним.
+   *
+   * @param notificationId ідентифікатор сповіщення
+   * @return оновлене сповіщення
+   * @throws ResourceNotFoundException якщо сповіщення немає
+   */
   NotificationResponse markRead(UUID notificationId) {
     NotificationEntity notification =
         notificationRepository

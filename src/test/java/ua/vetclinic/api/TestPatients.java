@@ -13,6 +13,16 @@ public final class TestPatients {
 
   private TestPatients() {}
 
+  /**
+   * Реєструє пацієнта лише з обов'язковими полями від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param ownerId власник
+   * @param name кличка
+   * @param species вид
+   * @return ідентифікатор створеного пацієнта
+   * @throws Exception якщо запит не повернув 201
+   */
   public static String createPatient(MockMvc mockMvc, String ownerId, String name, String species)
       throws Exception {
     String requestBody =

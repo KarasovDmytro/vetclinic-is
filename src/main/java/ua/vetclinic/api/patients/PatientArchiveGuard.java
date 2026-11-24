@@ -8,5 +8,11 @@ import java.util.UUID;
  */
 public interface PatientArchiveGuard {
 
+  /**
+   * Перевіряє, чи є в пацієнта записи у статусі «Заплановано».
+   *
+   * @param patientId ідентифікатор пацієнта
+   * @return {@code true}, якщо архівацію потрібно заборонити
+   */
   boolean hasScheduledAppointments(UUID patientId);
 }

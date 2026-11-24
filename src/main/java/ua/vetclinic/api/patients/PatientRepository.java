@@ -4,5 +4,6 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+/** Сховище пацієнтів; фільтри списку будуються через {@code Specification}. */
 interface PatientRepository
     extends JpaRepository<PatientEntity, UUID>, JpaSpecificationExecutor<PatientEntity> {}

@@ -27,16 +27,31 @@ public class UpdateMedicationRequest {
   @Max(1_000_000)
   private Integer minThreshold;
 
+  /**
+   * Приймає нову назву з JSON; пробіли по краях обрізаються.
+   *
+   * @param name нова назва або {@code null}
+   */
   public void setName(String name) {
     this.name = Strings.strip(name);
     provided.add("name");
   }
 
+  /**
+   * Приймає новий поріг з JSON; {@code null} вимикає сповіщення для препарату.
+   *
+   * @param minThreshold новий поріг або {@code null}
+   */
   public void setMinThreshold(Integer minThreshold) {
     this.minThreshold = minThreshold;
     provided.add("minThreshold");
   }
 
+  /**
+   * Фіксує спробу змінити залишок через PATCH, щоб відхилити її з причиною {@code IMMUTABLE_FIELD}.
+   *
+   * @param ignored значення з JSON, не використовується
+   */
   public void setQuantity(Object ignored) {
     quantityProvided = true;
   }

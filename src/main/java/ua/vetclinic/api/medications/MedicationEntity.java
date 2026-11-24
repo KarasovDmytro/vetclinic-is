@@ -6,6 +6,11 @@ import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * JPA-сутність медикаменту каталогу (таблиця {@code medications}).
+ *
+ * <p>Поле {@code quantity} — залишок препарату (SRS §3); БД не дозволяє йому стати від'ємним.
+ */
 @Entity
 @Table(name = "medications")
 class MedicationEntity {
@@ -49,11 +54,23 @@ class MedicationEntity {
     return quantity;
   }
 
+  /**
+   * Змінює залишок на {@code delta}; межі перевіряє викликач.
+   *
+   * @param delta зміна залишку, від'ємна для списання
+   * @param now час зміни
+   */
   void adjust(int delta, OffsetDateTime now) {
     this.quantity += delta;
     this.updatedAt = now;
   }
 
+  /**
+   * Застосовує передані в PATCH поля; відсутні поля не змінюються.
+   *
+   * @param changes поля запиту
+   * @param now час зміни
+   */
   void apply(UpdateMedicationRequest changes, OffsetDateTime now) {
     if (changes.isProvided("name")) {
       this.name = changes.name();

@@ -26,6 +26,13 @@ import ua.vetclinic.api.patients.PatientLookup;
 import ua.vetclinic.api.users.DoctorInfo;
 import ua.vetclinic.api.users.Doctors;
 
+/**
+ * Бізнес-логіка записів на прийом: перевірка слота, лікаря й пацієнта, захист від конфлікту
+ * розкладу та фіксація кожної зміни в журналі аудиту.
+ *
+ * <p>Конфлікт розкладу перевіряється двічі: запитом перед збереженням і унікальним індексом БД,
+ * який ловить паралельні запити на той самий слот.
+ */
 @Service
 class AppointmentService {
 
@@ -54,6 +61,16 @@ class AppointmentService {
     this.auditLog = auditLog;
   }
 
+  /**
+   * Створює запис у статусі «Заплановано».
+   *
+   * @param request лікар, пацієнт і початок слота
+   * @return створений запис
+   * @throws RequestValidationException якщо лікаря чи пацієнта не знайдено, лікаря деактивовано або
+   *     слот не відповідає сітці, робочим дням чи годинам клініки (422)
+   * @throws ConflictException {@code PATIENT_ARCHIVED} для архівної картки або {@code SLOT_TAKEN},
+   *     якщо слот уже зайнятий (409)
+   */
   AppointmentResponse create(CreateAppointmentRequest request) {
     ZonedDateTime start = request.startsAt().atZoneSameInstant(ClinicZone.ZONE);
     List<ErrorDetail> errors = new ArrayList<>();
@@ -105,10 +122,28 @@ class AppointmentService {
     return created;
   }
 
+  /**
+   * Повертає запис за ідентифікатором.
+   *
+   * @param appointmentId ідентифікатор запису
+   * @return запис
+   * @throws ResourceNotFoundException якщо запису немає
+   */
   AppointmentResponse get(UUID appointmentId) {
     return findOrThrow(appointmentId).toResponse();
   }
 
+  /**
+   * Переносить запис на інший слот того самого лікаря.
+   *
+   * @param appointmentId ідентифікатор запису
+   * @param request новий початок слота
+   * @return запис із новим часом
+   * @throws RequestValidationException якщо новий слот некоректний або лікаря деактивовано (422)
+   * @throws ResourceNotFoundException якщо запису немає
+   * @throws ConflictException {@code APPOINTMENT_NOT_SCHEDULED}, якщо запис не в статусі
+   *     «Заплановано», або {@code SLOT_TAKEN}, якщо новий слот зайнятий (409)
+   */
   AppointmentResponse reschedule(UUID appointmentId, UpdateAppointmentRequest request) {
     ZonedDateTime start = request.startsAt().atZoneSameInstant(ClinicZone.ZONE);
     Optional<ErrorDetail> slotError = ClinicSchedule.slotError(start);
@@ -146,6 +181,15 @@ class AppointmentService {
     return rescheduled;
   }
 
+  /**
+   * Скасовує запис; слот звільняється для нових записів.
+   *
+   * @param appointmentId ідентифікатор запису
+   * @return скасований запис
+   * @throws ResourceNotFoundException якщо запису немає
+   * @throws ConflictException {@code APPOINTMENT_NOT_SCHEDULED}, якщо запис уже завершено чи
+   *     скасовано
+   */
   AppointmentResponse cancel(UUID appointmentId) {
     AppointmentEntity appointment = findOrThrow(appointmentId);
     requireScheduled(appointment, "APPOINTMENT_CANCELLED");
@@ -155,6 +199,19 @@ class AppointmentService {
     return cancelled;
   }
 
+  /**
+   * Повертає сторінку записів за фільтрами; дні діапазону рахуються за часом клініки.
+   *
+   * @param doctorId фільтр за лікарем або {@code null}
+   * @param patientId фільтр за пацієнтом або {@code null}
+   * @param status фільтр за статусом або {@code null}
+   * @param from перший день діапазону або {@code null}
+   * @param to останній день діапазону або {@code null}
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки
+   * @return сторінка записів, відсортованих за часом початку
+   * @throws RequestValidationException якщо {@code to} раніше за {@code from}
+   */
   AppointmentPage list(
       UUID doctorId,
       UUID patientId,

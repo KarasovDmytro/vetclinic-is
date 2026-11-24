@@ -50,6 +50,13 @@ public final class TestNotifications {
     return JsonPath.read(body, "$.items[?(@.medicationId == '" + medicationId + "')]");
   }
 
+  /**
+   * Позначає сповіщення прочитаним від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param notificationId сповіщення
+   * @throws Exception якщо запит не повернув 200
+   */
   public static void markRead(MockMvc mockMvc, String notificationId) throws Exception {
     mockMvc
         .perform(

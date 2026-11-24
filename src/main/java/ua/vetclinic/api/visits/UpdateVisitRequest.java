@@ -27,21 +27,42 @@ public class UpdateVisitRequest {
   @Size(min = 1, max = 4000)
   private String notes;
 
+  /**
+   * Приймає діагноз з JSON і позначає поле переданим.
+   *
+   * @param diagnosis новий діагноз; {@code null} відхиляється як обов'язкове поле
+   */
   public void setDiagnosis(String diagnosis) {
     this.diagnosis = Strings.strip(diagnosis);
     provided.add("diagnosis");
   }
 
+  /**
+   * Приймає призначення з JSON і позначає поле переданим.
+   *
+   * @param prescriptions нові призначення або {@code null}, щоб їх очистити
+   */
   public void setPrescriptions(String prescriptions) {
     this.prescriptions = Strings.strip(prescriptions);
     provided.add("prescriptions");
   }
 
+  /**
+   * Приймає нотатки з JSON і позначає поле переданим.
+   *
+   * @param notes нові нотатки або {@code null}, щоб їх очистити
+   */
   public void setNotes(String notes) {
     this.notes = Strings.strip(notes);
     provided.add("notes");
   }
 
+  /**
+   * Фіксує спробу змінити перелік препаратів, щоб відхилити її з причиною {@code IMMUTABLE_FIELD}
+   * (AD-07.5).
+   *
+   * @param ignored значення з JSON, не використовується
+   */
   public void setMedications(Object ignored) {
     medicationsProvided = true;
   }

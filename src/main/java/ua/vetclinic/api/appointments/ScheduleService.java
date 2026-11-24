@@ -19,6 +19,11 @@ import ua.vetclinic.api.common.ResourceNotFoundException;
 import ua.vetclinic.api.patients.PatientLookup;
 import ua.vetclinic.api.users.Doctors;
 
+/**
+ * Побудова сітки розкладу лікаря: слоти робочих днів і зайняті ними записи.
+ *
+ * <p>У вихідні дні сітка містить лише слоти записів, що вже там стоять (AD-25.6–7).
+ */
 @Service
 class ScheduleService {
 
@@ -37,6 +42,17 @@ class ScheduleService {
     this.patients = patients;
   }
 
+  /**
+   * Будує сітку слотів лікаря за діапазон днів.
+   *
+   * @param doctorId лікар
+   * @param from перший день (включно)
+   * @param to останній день (включно)
+   * @return сітка з позначкою {@code FREE} або {@code BOOKED} для кожного слота
+   * @throws RequestValidationException якщо {@code to} раніше за {@code from} або діапазон довший
+   *     за 7 днів
+   * @throws ResourceNotFoundException якщо лікаря не знайдено
+   */
   ScheduleResponse schedule(UUID doctorId, LocalDate from, LocalDate to) {
     if (to.isBefore(from)) {
       throw new RequestValidationException(

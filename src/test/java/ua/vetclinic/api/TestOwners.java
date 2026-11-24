@@ -13,6 +13,15 @@ public final class TestOwners {
 
   private TestOwners() {}
 
+  /**
+   * Реєструє власника лише з обов'язковими полями від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param fullName ПІБ
+   * @param phone телефон у форматі {@code +380...}
+   * @return ідентифікатор створеного власника
+   * @throws Exception якщо запит не повернув 201
+   */
   public static String createOwner(MockMvc mockMvc, String fullName, String phone)
       throws Exception {
     String requestBody =

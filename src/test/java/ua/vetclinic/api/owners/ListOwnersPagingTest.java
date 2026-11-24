@@ -188,7 +188,8 @@ class ListOwnersPagingTest {
 
   @Test
   @DisplayName(
-      "AD-15.4: page і pageSize вибирають зріз відсортованого результату, total — загальна кількість")
+      "AD-15.4: page і pageSize вибирають зріз відсортованого результату, total — загальна "
+          + "кількість")
   void paging_returnsRequestedSliceAndTotal() throws Exception {
     // Arrange
     createOwner(mockMvc, "Сторінковий Тест Б", "+380501234571");

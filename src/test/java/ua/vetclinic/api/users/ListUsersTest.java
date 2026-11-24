@@ -27,7 +27,8 @@ class ListUsersTest {
 
   @Test
   @DisplayName(
-      "REQ-F-001: адміністратор отримує першу сторінку користувачів — 200 з page, pageSize, total, items")
+      "REQ-F-001: адміністратор отримує першу сторінку користувачів — 200 з page, pageSize, "
+          + "total, items")
   void adminListsUsers_returns200WithDefaultPage() throws Exception {
     // Arrange
     String requestBody =

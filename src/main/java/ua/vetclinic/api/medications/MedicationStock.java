@@ -53,14 +53,14 @@ public class MedicationStock {
       StockRequest request = requests.get(i);
       MedicationEntity medication = locked.get(request.medicationId());
       if (medication.quantity() < request.quantity()) {
-        String message =
-            "Недостатній залишок: %s (доступно: %d, запитано: %d)"
-                .formatted(medication.name(), medication.quantity(), request.quantity());
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("medicationId", request.medicationId());
         params.put("name", medication.name());
         params.put("available", medication.quantity());
         params.put("requested", request.quantity());
+        String message =
+            "Недостатній залишок: %s (доступно: %d, запитано: %d)"
+                .formatted(medication.name(), medication.quantity(), request.quantity());
         shortages.add(
             new ErrorDetail(
                 "medications[" + i + "].quantity", "INSUFFICIENT_STOCK", message, params));

@@ -51,7 +51,8 @@ class MarkNotificationReadTest {
 
   @Test
   @DisplayName(
-      "REQ-F-047: адміністратор позначає сповіщення прочитаним — 200, read true, решта полів без змін")
+      "REQ-F-047: адміністратор позначає сповіщення прочитаним — 200, read true, решта полів без "
+          + "змін")
   void adminMarksRead_returns200() throws Exception {
     // Arrange
     String id = notificationId;
@@ -86,7 +87,8 @@ class MarkNotificationReadTest {
 
   @Test
   @DisplayName(
-      "AD-20.2: прапорець спільний для всіх адміністраторів — після прочитання одним інший бачить read true")
+      "AD-20.2: прапорець спільний для всіх адміністраторів — після прочитання одним інший бачить "
+          + "read true")
   void readFlag_isSharedBetweenAdmins() throws Exception {
     // Arrange
     markAsAdmin(notificationId).andExpect(status().isOk());
@@ -128,7 +130,8 @@ class MarkNotificationReadTest {
 
   @Test
   @DisplayName(
-      "REQ-F-031: лікар не може позначати сповіщення — 403 FORBIDDEN, сповіщення лишається непрочитаним")
+      "REQ-F-031: лікар не може позначати сповіщення — 403 FORBIDDEN, сповіщення лишається "
+          + "непрочитаним")
   void veterinarian_returns403() throws Exception {
     // Arrange
     var request =
@@ -158,7 +161,8 @@ class MarkNotificationReadTest {
 
   @Test
   @DisplayName(
-      "AD-19.4: GET /notifications/{id}/mark-read — 405 METHOD_NOT_ALLOWED, дія виконується лише через POST")
+      "AD-19.4: GET /notifications/{id}/mark-read — 405 METHOD_NOT_ALLOWED, дія виконується лише "
+          + "через POST")
   void getMarkRead_returns405() throws Exception {
     // Arrange
     var request =

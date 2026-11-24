@@ -48,7 +48,8 @@ class LowStockNotificationTest {
 
   @Test
   @DisplayName(
-      "REQ-F-047, AD-02.2: залишок після списання строго нижчий за поріг — створюється непрочитане сповіщення LOW_STOCK")
+      "REQ-F-047, AD-02.2: залишок після списання строго нижчий за поріг — створюється "
+          + "непрочитане сповіщення LOW_STOCK")
   void quantityBelowThreshold_createsNotification() throws Exception {
     // Arrange
     String name = uniqueName("Новокаїн сповіщення");
@@ -233,7 +234,8 @@ class LowStockNotificationTest {
 
   @Test
   @DisplayName(
-      "REQ-F-047: препарат уже був нижче порогу до прийому — списання ще нижче створює сповіщення, якщо непрочитаних немає")
+      "REQ-F-047: препарат уже був нижче порогу до прийому — списання ще нижче створює "
+          + "сповіщення, якщо непрочитаних немає")
   void alreadyLowStock_createsNotificationOnNextWithdrawal() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Уже низький"), 6, 10);

@@ -48,7 +48,8 @@ class ListPatientsTest {
 
   @Test
   @DisplayName(
-      "REQ-F-017: адміністратор отримує першу сторінку пацієнтів — 200 з page, pageSize, total, items")
+      "REQ-F-017: адміністратор отримує першу сторінку пацієнтів — 200 з page, pageSize, total, "
+          + "items")
   void adminListsPatients_returns200WithDefaultPage() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Власник Списку", "+380501234620");
@@ -307,7 +308,8 @@ class ListPatientsTest {
 
   @Test
   @DisplayName(
-      "AD-15.4: page і pageSize вибирають зріз відсортованого результату, total — загальна кількість")
+      "AD-15.4: page і pageSize вибирають зріз відсортованого результату, total — загальна "
+          + "кількість")
   void paging_returnsRequestedSliceAndTotal() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Власник Сторінок", "+380501234631");

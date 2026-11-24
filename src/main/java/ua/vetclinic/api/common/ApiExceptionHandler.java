@@ -191,16 +191,16 @@ class ApiExceptionHandler {
     return reasonOf(constraintCode);
   }
 
-  private static boolean isBelowMinimum(ConstraintViolation<?> violation) {
-    int min = (int) violation.getConstraintDescriptor().getAttributes().get("min");
-    return violation.getInvalidValue() instanceof CharSequence value && value.length() < min;
-  }
-
   private static String reasonOf(String constraintCode) {
     return switch (constraintCode == null ? "" : constraintCode) {
       case "NotBlank", "NotNull" -> "REQUIRED";
       case "Min", "Max" -> "OUT_OF_RANGE";
       default -> "INVALID_FORMAT";
     };
+  }
+
+  private static boolean isBelowMinimum(ConstraintViolation<?> violation) {
+    int min = (int) violation.getConstraintDescriptor().getAttributes().get("min");
+    return violation.getInvalidValue() instanceof CharSequence value && value.length() < min;
   }
 }

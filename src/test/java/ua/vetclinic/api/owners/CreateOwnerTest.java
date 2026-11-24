@@ -117,7 +117,8 @@ class CreateOwnerTest {
 
   @Test
   @DisplayName(
-      "REQ-F-010: телефон не за шаблоном (пробіли, дужки) — 422, поле phone, причина INVALID_FORMAT (AD-17)")
+      "REQ-F-010: телефон не за шаблоном (пробіли, дужки) — 422, поле phone, причина "
+          + "INVALID_FORMAT (AD-17)")
   void phoneWithSpaces_returns422InvalidFormat() throws Exception {
     // Arrange
     String requestBody =

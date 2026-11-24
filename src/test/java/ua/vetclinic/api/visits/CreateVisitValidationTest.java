@@ -62,7 +62,8 @@ class CreateVisitValidationTest {
 
   @Test
   @DisplayName(
-      "AD-12: діагноз не вказано — 422, поле diagnosis, причина REQUIRED, запис лишається SCHEDULED")
+      "AD-12: діагноз не вказано — 422, поле diagnosis, причина REQUIRED, запис лишається "
+          + "SCHEDULED")
   void missingDiagnosis_returns422Required() throws Exception {
     // Arrange
     String requestBody = "{ \"notes\": \"Лише нотатки\" }";
@@ -321,7 +322,8 @@ class CreateVisitValidationTest {
 
   @Test
   @DisplayName(
-      "AD-08.1: нульова кількість — 422, поле medications[0].quantity, причина OUT_OF_RANGE (мінімум 1)")
+      "AD-08.1: нульова кількість — 422, поле medications[0].quantity, причина OUT_OF_RANGE "
+          + "(мінімум 1)")
   void zeroQuantity_returns422OutOfRange() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Нуль кількість"), 5, null);
@@ -411,7 +413,8 @@ class CreateVisitValidationTest {
 
   @Test
   @DisplayName(
-      "AD-18.3: медикамента немає в каталозі — 422, поле medications[0].medicationId, причина REFERENCE_NOT_FOUND")
+      "AD-18.3: медикамента немає в каталозі — 422, поле medications[0].medicationId, причина "
+          + "REFERENCE_NOT_FOUND")
   void unknownMedication_returns422ReferenceNotFound() throws Exception {
     // Arrange
     String requestBody = visitBodyWith("00000000-0000-4000-8000-000000000b03", 1);
@@ -429,7 +432,8 @@ class CreateVisitValidationTest {
 
   @Test
   @DisplayName(
-      "AD-07.4: один препарат двічі — 422, поле другої позиції medications[1].medicationId, причина DUPLICATE_MEDICATION, залишок не змінюється")
+      "AD-07.4: один препарат двічі — 422, поле другої позиції medications[1].medicationId, "
+          + "причина DUPLICATE_MEDICATION, залишок не змінюється")
   void duplicateMedication_returns422() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Дубль у прийомі"), 10, null);

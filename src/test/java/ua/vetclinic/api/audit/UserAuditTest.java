@@ -45,7 +45,8 @@ class UserAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: створення користувача — подія USER_CREATED з виконавцем, сутністю, SUCCESS і requestId")
+      "REQ-NF-006: створення користувача — подія USER_CREATED з виконавцем, сутністю, SUCCESS і "
+          + "requestId")
   void createUser_isAudited() throws Exception {
     // Arrange
     String adminId =

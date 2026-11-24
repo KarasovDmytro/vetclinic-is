@@ -92,7 +92,8 @@ class DoctorScheduleTest {
 
   @Test
   @DisplayName(
-      "REQ-F-020: слот із записом SCHEDULED зайнятий — BOOKED з id запису, пацієнтом, його ім'ям і статусом")
+      "REQ-F-020: слот із записом SCHEDULED зайнятий — BOOKED з id запису, пацієнтом, його ім'ям "
+          + "і статусом")
   void scheduledAppointment_marksSlotBooked() throws Exception {
     // Arrange
     String doctorId = createDoctor(mockMvc, "Розклад Зайнятий");
@@ -157,7 +158,8 @@ class DoctorScheduleTest {
 
   @Test
   @DisplayName(
-      "AD-17.5, AD-25.6: діапазон із семи днів допустимий — 90 слотів п'яти робочих днів, відсортованих за часом зростання")
+      "AD-17.5, AD-25.6: діапазон із семи днів допустимий — 90 слотів п'яти робочих днів, "
+          + "відсортованих за часом зростання")
   void sevenDayRange_returns90SortedSlots() throws Exception {
     // Arrange
     String doctorId = createDoctor(mockMvc, "Розклад Тиждень");

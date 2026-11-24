@@ -96,7 +96,8 @@ class CreatePatientValidationTest {
 
   @Test
   @DisplayName(
-      "AD-17.4: межі допустимі — ім'я 100, вид 50, порода 100 символів, дата народження сьогодні — 201")
+      "AD-17.4: межі допустимі — ім'я 100, вид 50, порода 100 символів, дата народження сьогодні "
+          + "— 201")
   void valuesOnBounds_return201() throws Exception {
     // Arrange
     String today = LocalDate.now(ZoneId.of("Europe/Kyiv")).toString();

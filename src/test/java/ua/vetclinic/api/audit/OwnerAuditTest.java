@@ -50,7 +50,8 @@ class OwnerAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: реєстрація власника — подія OWNER_CREATED з виконавцем і сутністю, без ПІБ і телефону")
+      "REQ-NF-006: реєстрація власника — подія OWNER_CREATED з виконавцем і сутністю, без ПІБ і "
+          + "телефону")
   void createOwner_isAuditedWithoutPersonalData() throws Exception {
     // Arrange
     String adminId =
@@ -102,7 +103,8 @@ class OwnerAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: редагування власника — подія OWNER_UPDATED з виконавцем і сутністю, без нових персональних даних")
+      "REQ-NF-006: редагування власника — подія OWNER_UPDATED з виконавцем і сутністю, без нових "
+          + "персональних даних")
   void updateOwner_isAuditedWithoutPersonalData() throws Exception {
     // Arrange
     String adminId =
@@ -148,7 +150,8 @@ class OwnerAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: порожнє тіло PATCH (422) — OWNER_UPDATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: порожнє тіло PATCH (422) — OWNER_UPDATED з outcome=FAILURE і errorCode "
+          + "VALIDATION_ERROR")
   void updateWithEmptyBody_isAuditedAsFailure() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Власник Порожньої Правки", "+380504040404");
@@ -175,7 +178,8 @@ class OwnerAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: обов'язкове поле null у PATCH (422) — OWNER_UPDATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: обов'язкове поле null у PATCH (422) — OWNER_UPDATED з outcome=FAILURE і errorCode "
+          + "VALIDATION_ERROR")
   void updateWithNullRequiredField_isAuditedAsFailure() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Власник Null Правки", "+380505050505");

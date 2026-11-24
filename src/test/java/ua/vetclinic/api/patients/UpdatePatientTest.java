@@ -224,7 +224,8 @@ class UpdatePatientTest {
 
   @Test
   @DisplayName(
-      "REQ-F-014: зміна власника заборонена — ownerId у тілі дає 422, поле ownerId, причина IMMUTABLE_FIELD")
+      "REQ-F-014: зміна власника заборонена — ownerId у тілі дає 422, поле ownerId, причина "
+          + "IMMUTABLE_FIELD")
   void ownerIdInBody_returns422ImmutableField() throws Exception {
     // Arrange
     String otherOwnerId = createOwner(mockMvc, "Інший Власник", "+380501234601");

@@ -276,7 +276,8 @@ class CreateUserTest {
 
   @Test
   @DisplayName(
-      "REQ-F-001: пароль не вказано — 422 VALIDATION_ERROR, поле password, причина REQUIRED (AD-11)")
+      "REQ-F-001: пароль не вказано — 422 VALIDATION_ERROR, поле password, причина REQUIRED "
+          + "(AD-11)")
   void adminCreatesUserWithoutPassword_returns422Required() throws Exception {
     // Arrange
     String requestBody =

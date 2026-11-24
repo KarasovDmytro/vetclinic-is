@@ -195,7 +195,8 @@ class ListMedicationsTest {
 
   @Test
   @DisplayName(
-      "REQ-F-043: lowStock=false повертає препарати без нестачі, зокрема без порога й із залишком, що дорівнює порогу")
+      "REQ-F-043: lowStock=false повертає препарати без нестачі, зокрема без порога й із "
+          + "залишком, що дорівнює порогу")
   void lowStockFalse_returnsOthers() throws Exception {
     // Arrange
     String tag = tag();
@@ -231,7 +232,8 @@ class ListMedicationsTest {
 
   @Test
   @DisplayName(
-      "AD-19.2: пагінація — друга сторінка по 2 елементи містить третій і четвертий, total дорівнює 4")
+      "AD-19.2: пагінація — друга сторінка по 2 елементи містить третій і четвертий, total "
+          + "дорівнює 4")
   void paging_returnsRequestedPage() throws Exception {
     // Arrange
     String tag = tag();

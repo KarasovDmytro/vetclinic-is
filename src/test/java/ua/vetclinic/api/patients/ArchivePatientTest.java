@@ -152,7 +152,8 @@ class ArchivePatientTest {
 
   @Test
   @DisplayName(
-      "AD-04.3: архівація необоротна — повторний GET і спроба повторної архівації не повертають ACTIVE")
+      "AD-04.3: архівація необоротна — повторний GET і спроба повторної архівації не повертають "
+          + "ACTIVE")
   void archive_isIrreversible() throws Exception {
     // Arrange
     archive(patientId).andExpect(status().isOk());
@@ -256,7 +257,8 @@ class ArchivePatientTest {
 
   @Test
   @DisplayName(
-      "AD-09, REQ-F-016: DELETE /patients/{id} — 405 METHOD_NOT_ALLOWED із Allow, картка не видаляється")
+      "AD-09, REQ-F-016: DELETE /patients/{id} — 405 METHOD_NOT_ALLOWED із Allow, картка не "
+          + "видаляється")
   void deletePatient_returns405AndKeepsPatient() throws Exception {
     // Arrange
     var request = delete("/api/v1/patients/" + patientId).with(user("admin").roles("ADMIN"));

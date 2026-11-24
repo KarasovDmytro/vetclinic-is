@@ -140,7 +140,8 @@ class CreateVisitStockTest {
 
   @Test
   @DisplayName(
-      "AD-18.7: details містить позицію запиту, причину INSUFFICIENT_STOCK і params medicationId, name, available, requested")
+      "AD-18.7: details містить позицію запиту, причину INSUFFICIENT_STOCK і params medicationId, "
+          + "name, available, requested")
   void insufficientStock_describesProblemMedication() throws Exception {
     // Arrange
     String enough = createMedication(mockMvc, uniqueName("Достатньо"), 10, null);
@@ -194,7 +195,8 @@ class CreateVisitStockTest {
 
   @Test
   @DisplayName(
-      "REQ-F-046, REQ-NF-005: при нестачі не змінюється нічого — немає прийому, запис SCHEDULED, залишки всіх препаратів на місці")
+      "REQ-F-046, REQ-NF-005: при нестачі не змінюється нічого — немає прийому, запис SCHEDULED, "
+          + "залишки всіх препаратів на місці")
   void insufficientStock_changesNothing() throws Exception {
     // Arrange
     String enough = createMedication(mockMvc, uniqueName("Достатньо без змін"), 10, null);
@@ -221,7 +223,8 @@ class CreateVisitStockTest {
 
   @Test
   @DisplayName(
-      "REQ-F-046: після відмови через нестачу той самий запис можна зберегти з меншою кількістю — 201")
+      "REQ-F-046: після відмови через нестачу той самий запис можна зберегти з меншою кількістю — "
+          + "201")
   void afterInsufficientStock_visitCanBeSavedWithSmallerQuantity() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Повторна спроба"), 5, null);
@@ -238,7 +241,8 @@ class CreateVisitStockTest {
 
   @Test
   @DisplayName(
-      "REQ-F-048: препарат із нульовим залишком не можна списати — 409 INSUFFICIENT_STOCK, доступно 0")
+      "REQ-F-048: препарат із нульовим залишком не можна списати — 409 INSUFFICIENT_STOCK, "
+          + "доступно 0")
   void emptyStock_returns409() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Порожній"), 0, null);
@@ -255,7 +259,8 @@ class CreateVisitStockTest {
 
   @Test
   @DisplayName(
-      "REQ-F-048, REQ-NF-005: 8 паралельних прийомів по 1 одиниці при залишку 5 — рівно 5 успіхів, 3 відмови, залишок 0")
+      "REQ-F-048, REQ-NF-005: 8 паралельних прийомів по 1 одиниці при залишку 5 — рівно 5 "
+          + "успіхів, 3 відмови, залишок 0")
   void concurrentVisits_neverOverdrawStock() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Паралельне списання"), 5, null);

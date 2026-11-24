@@ -39,7 +39,8 @@ class HttpRequestLogTest {
 
   @Test
   @DisplayName(
-      "AD-21.5: рядок містить метод, шлях, код відповіді, тривалість і requestId, що збігається з X-Request-Id")
+      "AD-21.5: рядок містить метод, шлях, код відповіді, тривалість і requestId, що збігається з "
+          + "X-Request-Id")
   void request_isLoggedWithMethodPathStatusDurationAndRequestId() throws Exception {
     // Arrange
     var request = get("/api/v1/users").with(user("admin").roles("ADMIN"));

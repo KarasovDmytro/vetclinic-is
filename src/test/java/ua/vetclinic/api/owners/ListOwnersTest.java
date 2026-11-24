@@ -26,7 +26,8 @@ class ListOwnersTest {
 
   @Test
   @DisplayName(
-      "REQ-F-017: адміністратор отримує першу сторінку власників — 200 з page, pageSize, total, items")
+      "REQ-F-017: адміністратор отримує першу сторінку власників — 200 з page, pageSize, total, "
+          + "items")
   void adminListsOwners_returns200WithDefaultPage() throws Exception {
     // Arrange
     createOwner(mockMvc, "Списко Перший Іванович", "+380508889900");

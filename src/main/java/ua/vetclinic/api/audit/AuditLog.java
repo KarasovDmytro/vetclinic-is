@@ -27,6 +27,28 @@ public class AuditLog {
         MDC.get("requestId"));
   }
 
+  /**
+   * Фіксує успішну дію поточного автентифікованого користувача.
+   *
+   * @param event назва події, наприклад {@code PATIENT_CREATED}
+   * @param entityType тип сутності
+   * @param entityId ідентифікатор сутності
+   */
+  public void success(String event, String entityType, UUID entityId) {
+    Jwt actor = currentActor();
+    success(event, actorIdOf(actor), actorRoleOf(actor), entityType, entityId);
+  }
+
+  /**
+   * Фіксує відхилену дію з явно вказаним виконавцем (AD-22.4).
+   *
+   * @param event назва події, наприклад {@code LOGIN_FAILED}
+   * @param actorId виконавець або {@code null}, якщо його не встановлено
+   * @param actorRole роль виконавця або {@code null}
+   * @param entityType тип сутності
+   * @param entityId ідентифікатор сутності або {@code null}, якщо її не створено
+   * @param errorCode код помилки відповіді, наприклад {@code INVALID_CREDENTIALS}
+   */
   public void failure(
       String event,
       UUID actorId,
@@ -35,7 +57,8 @@ public class AuditLog {
       UUID entityId,
       String errorCode) {
     AUDIT.info(
-        "event={} actorId={} actorRole={} entityType={} entityId={} outcome=FAILURE requestId={} errorCode={}",
+        "event={} actorId={} actorRole={} entityType={} entityId={} outcome=FAILURE requestId={} "
+            + "errorCode={}",
         event,
         actorId,
         actorRole,
@@ -45,11 +68,14 @@ public class AuditLog {
         errorCode);
   }
 
-  public void success(String event, String entityType, UUID entityId) {
-    Jwt actor = currentActor();
-    success(event, actorIdOf(actor), actorRoleOf(actor), entityType, entityId);
-  }
-
+  /**
+   * Фіксує відхилену дію поточного автентифікованого користувача (AD-22.4).
+   *
+   * @param event назва події
+   * @param entityType тип сутності
+   * @param entityId ідентифікатор сутності або {@code null}, якщо її не створено
+   * @param errorCode код помилки відповіді
+   */
   public void failure(String event, String entityType, UUID entityId, String errorCode) {
     Jwt actor = currentActor();
     failure(event, actorIdOf(actor), actorRoleOf(actor), entityType, entityId, errorCode);

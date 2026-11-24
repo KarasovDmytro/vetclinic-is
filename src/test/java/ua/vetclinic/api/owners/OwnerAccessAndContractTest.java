@@ -38,7 +38,8 @@ class OwnerAccessAndContractTest {
 
   @Test
   @DisplayName(
-      "AD-19.1: createdAt і updatedAt — ISO 8601 із зсувом часового поясу клініки, при створенні вони рівні")
+      "AD-19.1: createdAt і updatedAt — ISO 8601 із зсувом часового поясу клініки, при створенні "
+          + "вони рівні")
   void timestamps_areIsoWithClinicOffsetAndEqualOnCreation() throws Exception {
     // Arrange
     String requestBody =
@@ -69,7 +70,8 @@ class OwnerAccessAndContractTest {
 
   @Test
   @DisplayName(
-      "REQ-F-010: збережений власник повертається через GET з усіма полями, часові мітки у часовому поясі клініки")
+      "REQ-F-010: збережений власник повертається через GET з усіма полями, часові мітки у "
+          + "часовому поясі клініки")
   void createdOwner_isReturnedByGetWithAllFields() throws Exception {
     // Arrange
     var created =
@@ -180,7 +182,8 @@ class OwnerAccessAndContractTest {
 
   @Test
   @DisplayName(
-      "REQ-F-004: справжній токен лікаря, виданий при вході, дозволяє читати власників, але не створювати")
+      "REQ-F-004: справжній токен лікаря, виданий при вході, дозволяє читати власників, але не "
+          + "створювати")
   void veterinarianToken_readsButCannotCreateOwners() throws Exception {
     // Arrange
     createUser(
@@ -306,7 +309,8 @@ class OwnerAccessAndContractTest {
 
   @Test
   @DisplayName(
-      "AD-09, AD-18.2: DELETE /owners/{id} — 405 METHOD_NOT_ALLOWED із заголовком Allow, видалення немає")
+      "AD-09, AD-18.2: DELETE /owners/{id} — 405 METHOD_NOT_ALLOWED із заголовком Allow, "
+          + "видалення немає")
   void deleteOwner_returns405WithAllowHeader() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Не Видаляти Петрович", "+380501234567");

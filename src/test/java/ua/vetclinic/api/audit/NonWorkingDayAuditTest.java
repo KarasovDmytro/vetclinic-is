@@ -58,7 +58,8 @@ class NonWorkingDayAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: запис на суботу (422) — APPOINTMENT_CREATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: запис на суботу (422) — APPOINTMENT_CREATED з outcome=FAILURE і errorCode "
+          + "VALIDATION_ERROR")
   void createOnSaturday_isAuditedAsFailure() throws Exception {
     // Arrange
     String saturdayStart = slot("2026-10-31", "14:00");
@@ -91,7 +92,8 @@ class NonWorkingDayAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: перенесення на суботу (422) — APPOINTMENT_RESCHEDULED з outcome=FAILURE, errorCode VALIDATION_ERROR і id запису")
+      "AD-22.4: перенесення на суботу (422) — APPOINTMENT_RESCHEDULED з outcome=FAILURE, "
+          + "errorCode VALIDATION_ERROR і id запису")
   void rescheduleToSaturday_isAuditedAsFailure() throws Exception {
     // Arrange
     String appointmentId =

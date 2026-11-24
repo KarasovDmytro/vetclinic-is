@@ -116,7 +116,8 @@ class CreateAppointmentOnNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.1: п'ятниця (30.10.2026, 14:00) — останній робочий день перед вихідними, запис створено")
+      "AD-25.1: п'ятниця (30.10.2026, 14:00) — останній робочий день перед вихідними, запис "
+          + "створено")
   void friday_isCreated() throws Exception {
     // Arrange
     String fridayStart = slot("2026-10-30", "14:00");
@@ -150,7 +151,8 @@ class CreateAppointmentOnNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.2: день рахується за часом клініки — 2026-10-31T07:00:00Z це субота 09:00 за Києвом, 422")
+      "AD-25.2: день рахується за часом клініки — 2026-10-31T07:00:00Z це субота 09:00 за Києвом, "
+          + "422")
   void utcInstantThatIsSaturdayInClinicZone_returns422NonWorkingDay() throws Exception {
     // Arrange
     String saturdayMorningUtc = "2026-10-31T07:00:00Z";
@@ -167,7 +169,8 @@ class CreateAppointmentOnNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.2: п'ятниця за UTC, але субота 00:30 за Києвом (2026-10-30T22:30:00Z) — NON_WORKING_DAY")
+      "AD-25.2: п'ятниця за UTC, але субота 00:30 за Києвом (2026-10-30T22:30:00Z) — "
+          + "NON_WORKING_DAY")
   void fridayInUtcButSaturdayInClinicZone_returns422NonWorkingDay() throws Exception {
     // Arrange
     String fridayNightUtc = "2026-10-30T22:30:00Z";
@@ -184,7 +187,8 @@ class CreateAppointmentOnNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.2: неділя за UTC, але понеділок 00:30 за Києвом (2026-11-01T22:30:00Z) — робочий день, поза годинами")
+      "AD-25.2: неділя за UTC, але понеділок 00:30 за Києвом (2026-11-01T22:30:00Z) — робочий "
+          + "день, поза годинами")
   void sundayInUtcButMondayInClinicZone_returns422OutsideWorkingHours() throws Exception {
     // Arrange
     String sundayNightUtc = "2026-11-01T22:30:00Z";
@@ -235,7 +239,8 @@ class CreateAppointmentOnNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.5: субота 20:00 — лише NON_WORKING_DAY, а не OUTSIDE_WORKING_HOURS (день перевіряється раніше за години)")
+      "AD-25.5: субота 20:00 — лише NON_WORKING_DAY, а не OUTSIDE_WORKING_HOURS (день "
+          + "перевіряється раніше за години)")
   void saturdayAfterHours_returnsOnlyNonWorkingDay() throws Exception {
     // Arrange
     String lateSaturday = slot("2026-10-31", "20:00");

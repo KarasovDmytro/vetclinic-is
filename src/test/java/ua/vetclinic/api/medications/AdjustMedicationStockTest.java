@@ -215,7 +215,8 @@ class AdjustMedicationStockTest {
 
   @Test
   @DisplayName(
-      "AD-17.7: результат понад 1 000 000 — 422, поле delta, причина OUT_OF_RANGE, залишок не змінюється")
+      "AD-17.7: результат понад 1 000 000 — 422, поле delta, причина OUT_OF_RANGE, залишок не "
+          + "змінюється")
   void resultAboveMaximum_returns422AndKeepsQuantity() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Переповнення"), 999999, null);
@@ -261,7 +262,8 @@ class AdjustMedicationStockTest {
 
   @Test
   @DisplayName(
-      "AD-08.2: нове абсолютне значення замість зміни не приймається — quantity у запиті 422 UNKNOWN_FIELD")
+      "AD-08.2: нове абсолютне значення замість зміни не приймається — quantity у запиті 422 "
+          + "UNKNOWN_FIELD")
   void absoluteQuantity_returns422UnknownField() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Абсолютне значення"), 5, null);

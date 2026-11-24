@@ -38,7 +38,8 @@ class CreatePatientTest {
 
   @Test
   @DisplayName(
-      "REQ-F-012: адміністратор реєструє пацієнта з усіма полями — 201, Location, статус ACTIVE від сервера")
+      "REQ-F-012: адміністратор реєструє пацієнта з усіма полями — 201, Location, статус ACTIVE "
+          + "від сервера")
   void adminCreatesPatient_returns201WithActiveStatus() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Власник Барсика", "+380501234567");
@@ -121,7 +122,8 @@ class CreatePatientTest {
 
   @Test
   @DisplayName(
-      "REQ-F-014: у одного власника може бути кілька пацієнтів, кожен прив'язаний рівно до одного власника")
+      "REQ-F-014: у одного власника може бути кілька пацієнтів, кожен прив'язаний рівно до одного "
+          + "власника")
   void ownerCanHaveSeveralPatients() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Власник Двох Тварин", "+380501234569");

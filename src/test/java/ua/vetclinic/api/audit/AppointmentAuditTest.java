@@ -321,7 +321,7 @@ class AppointmentAuditTest {
     // Arrange
     String appointmentId =
         createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "17:00"));
-    int linesBefore = audit.lines().size();
+    final int linesBefore = audit.lines().size();
 
     // Act
     mockMvc

@@ -55,7 +55,8 @@ class NotificationAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.1: автоматичне створення сповіщення — системна подія LOW_STOCK_NOTIFICATION_CREATED без виконавця-людини")
+      "AD-22.1: автоматичне створення сповіщення — системна подія LOW_STOCK_NOTIFICATION_CREATED "
+          + "без виконавця-людини")
   void notificationCreation_isAuditedAsSystemEvent() throws Exception {
     // Arrange
     String medicationName = uniqueName("Аудит сповіщення");
@@ -94,7 +95,8 @@ class NotificationAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: позначення прочитаним — подія NOTIFICATION_MARKED_READ з адміністратором і сутністю")
+      "REQ-NF-006: позначення прочитаним — подія NOTIFICATION_MARKED_READ з адміністратором і "
+          + "сутністю")
   void markRead_isAudited() throws Exception {
     // Arrange
     String adminEmail = "audit.notifications." + System.nanoTime() + "@clinic.example";

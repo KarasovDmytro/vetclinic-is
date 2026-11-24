@@ -61,7 +61,8 @@ class PatientAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: реєстрація пацієнта — подія PATIENT_CREATED з виконавцем і сутністю, без імені тварини")
+      "REQ-NF-006: реєстрація пацієнта — подія PATIENT_CREATED з виконавцем і сутністю, без імені "
+          + "тварини")
   void createPatient_isAuditedWithoutPersonalData() throws Exception {
     // Arrange
     String requestBody =
@@ -96,7 +97,8 @@ class PatientAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: редагування пацієнта — подія PATIENT_UPDATED з виконавцем і сутністю, без нового імені")
+      "REQ-NF-006: редагування пацієнта — подія PATIENT_UPDATED з виконавцем і сутністю, без "
+          + "нового імені")
   void updatePatient_isAuditedWithoutPersonalData() throws Exception {
     // Arrange
     String patientId = createPatient(mockMvc, ownerId, "Стара Кличка", "Кіт");
@@ -156,7 +158,8 @@ class PatientAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: повторна архівація (409) — PATIENT_ARCHIVED з outcome=FAILURE і errorCode PATIENT_ARCHIVED")
+      "AD-22.4: повторна архівація (409) — PATIENT_ARCHIVED з outcome=FAILURE і errorCode "
+          + "PATIENT_ARCHIVED")
   void archiveTwice_isAuditedAsFailure() throws Exception {
     // Arrange
     String patientId = createPatient(mockMvc, ownerId, "Подвійна Архівація", "Кіт");
@@ -187,7 +190,8 @@ class PatientAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: реєстрація з неіснуючим власником (422) — PATIENT_CREATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: реєстрація з неіснуючим власником (422) — PATIENT_CREATED з outcome=FAILURE і "
+          + "errorCode VALIDATION_ERROR")
   void createWithUnknownOwner_isAuditedAsFailure() throws Exception {
     // Arrange
     String requestBody =

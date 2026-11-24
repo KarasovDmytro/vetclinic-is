@@ -101,7 +101,8 @@ class LegacyWeekendAppointmentTest {
 
   @Test
   @DisplayName(
-      "AD-25.7: запис на вихідному дні лишається в розкладі — єдиний слот суботи зайнятий (BOOKED), вільних немає")
+      "AD-25.7: запис на вихідному дні лишається в розкладі — єдиний слот суботи зайнятий "
+          + "(BOOKED), вільних немає")
   void legacyAppointment_isOnlySlotOfWeekend() throws Exception {
     // Arrange
     String expectedStart = slot(LEGACY_DAY, "10:00");
@@ -150,7 +151,8 @@ class LegacyWeekendAppointmentTest {
 
   @Test
   @DisplayName(
-      "AD-25.7: після скасування запису на вихідному дні слотів у сітці цього діапазону не лишається")
+      "AD-25.7: після скасування запису на вихідному дні слотів у сітці цього діапазону не "
+          + "лишається")
   void afterCancel_weekendScheduleIsEmpty() throws Exception {
     // Arrange
     cancelAppointment(mockMvc, appointmentId);
@@ -164,7 +166,8 @@ class LegacyWeekendAppointmentTest {
 
   @Test
   @DisplayName(
-      "AD-25.7, AD-14: лікар зберігає прийом за записом на вихідному дні — 201, visitDate дорівнює startsAt")
+      "AD-25.7, AD-14: лікар зберігає прийом за записом на вихідному дні — 201, visitDate "
+          + "дорівнює startsAt")
   void doctorCanSaveVisit_forLegacyAppointment() throws Exception {
     // Arrange
     String expectedVisitDate = slot(LEGACY_DAY, "10:00");
@@ -181,7 +184,8 @@ class LegacyWeekendAppointmentTest {
 
   @Test
   @DisplayName(
-      "AD-25.7, AD-03.2: завершений запис на вихідному дні лишається в сітці — слот BOOKED, статус запису COMPLETED")
+      "AD-25.7, AD-03.2: завершений запис на вихідному дні лишається в сітці — слот BOOKED, "
+          + "статус запису COMPLETED")
   void completedLegacyAppointment_stillOccupiesSlot() throws Exception {
     // Arrange
     postVisit(mockMvc, doctor, appointmentId, DEFAULT_VISIT_BODY).andExpect(status().isCreated());
@@ -199,7 +203,8 @@ class LegacyWeekendAppointmentTest {
 
   @Test
   @DisplayName(
-      "AD-25.7: запис на вихідному дні не можна перенести на інший вихідний (01.11.2026, 10:00) — 422 NON_WORKING_DAY")
+      "AD-25.7: запис на вихідному дні не можна перенести на інший вихідний (01.11.2026, 10:00) — "
+          + "422 NON_WORKING_DAY")
   void legacyAppointment_cannotMoveToAnotherWeekendDay() throws Exception {
     // Arrange
     String sundayStart = slot("2026-11-01", "10:00");

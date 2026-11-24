@@ -75,7 +75,8 @@ class RescheduleAppointmentTest {
 
   @Test
   @DisplayName(
-      "REQ-F-024: перенесення на вільний слот — 200, id, лікар, пацієнт і статус SCHEDULED лишаються, час новий")
+      "REQ-F-024: перенесення на вільний слот — 200, id, лікар, пацієнт і статус SCHEDULED "
+          + "лишаються, час новий")
   void rescheduleToFreeSlot_returns200AndKeepsIdentity() throws Exception {
     // Arrange
     String requestBody = startsAtBody("15:00");

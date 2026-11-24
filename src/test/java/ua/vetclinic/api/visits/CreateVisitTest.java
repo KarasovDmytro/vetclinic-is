@@ -68,7 +68,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "REQ-F-032, REQ-F-033: лікар зберігає прийом — 201, id, appointmentId, patientId, doctorId і результати")
+      "REQ-F-032, REQ-F-033: лікар зберігає прийом — 201, id, appointmentId, patientId, doctorId "
+          + "і результати")
   void assignedDoctorCreatesVisit_returns201() throws Exception {
     // Arrange
     String requestBody =
@@ -141,7 +142,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "AD-12: обов'язковий лише діагноз — без призначень, нотаток і медикаментів прийом зберігається")
+      "AD-12: обов'язковий лише діагноз — без призначень, нотаток і медикаментів прийом "
+          + "зберігається")
   void onlyDiagnosis_isEnough() throws Exception {
     // Arrange
     String requestBody = "{ \"diagnosis\": \"Лише діагноз\" }";
@@ -192,7 +194,8 @@ class CreateVisitTest {
   void textFields_areTrimmed() throws Exception {
     // Arrange
     String requestBody =
-        "{ \"diagnosis\": \"  Діагноз  \", \"prescriptions\": \" Призначення \", \"notes\": \" Нотатки \" }";
+        "{ \"diagnosis\": \"  Діагноз  \", \"prescriptions\": \" Призначення \", \"notes\": \" "
+            + "Нотатки \" }";
 
     // Act
     var response = postVisit(mockMvc, doctor, appointmentId, requestBody);
@@ -207,7 +210,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "REQ-F-044: у відповіді перелік витрачених препаратів — medicationId, medicationName і quantity")
+      "REQ-F-044: у відповіді перелік витрачених препаратів — medicationId, medicationName і "
+          + "quantity")
   void medications_areReturnedWithNames() throws Exception {
     // Arrange
     String name = uniqueName("Амоксицилін прийом");
@@ -250,7 +254,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "AD-03.1: слот завершеного запису лишається зайнятим — новий запис на нього дає 409 SLOT_TAKEN")
+      "AD-03.1: слот завершеного запису лишається зайнятим — новий запис на нього дає 409 "
+          + "SLOT_TAKEN")
   void completedAppointment_keepsSlotOccupied() throws Exception {
     // Arrange
     createVisit(mockMvc, doctor, appointmentId);
@@ -325,7 +330,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "AD-07.1: прийом, збережений іншим лікарем — 403 NOT_ASSIGNED_DOCTOR, запис лишається SCHEDULED")
+      "AD-07.1: прийом, збережений іншим лікарем — 403 NOT_ASSIGNED_DOCTOR, запис лишається "
+          + "SCHEDULED")
   void otherDoctor_returns403() throws Exception {
     // Arrange
     Doctor otherDoctor = newDoctor(mockMvc, "Лікар Прийому Інший");
@@ -362,7 +368,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "AD-04.1, REQ-F-035: пацієнт із архівною карткою — 409 PATIENT_ARCHIVED, запис лишається SCHEDULED")
+      "AD-04.1, REQ-F-035: пацієнт із архівною карткою — 409 PATIENT_ARCHIVED, запис лишається "
+          + "SCHEDULED")
   void archivedPatient_returns409() throws Exception {
     // Arrange
     jdbcTemplate.update("update patients set status = 'ARCHIVED' where id = ?::uuid", patientId);
@@ -423,7 +430,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "REQ-F-031: адміністратор не може зберігати прийом — 403 FORBIDDEN, запис лишається SCHEDULED")
+      "REQ-F-031: адміністратор не може зберігати прийом — 403 FORBIDDEN, запис лишається "
+          + "SCHEDULED")
   void admin_returns403() throws Exception {
     // Arrange
     var request =
@@ -481,7 +489,8 @@ class CreateVisitTest {
 
   @Test
   @DisplayName(
-      "AD-07.1: паралельні прийоми для одного запису — рівно один 201 і решта 409 APPOINTMENT_NOT_SCHEDULED")
+      "AD-07.1: паралельні прийоми для одного запису — рівно один 201 і решта 409 "
+          + "APPOINTMENT_NOT_SCHEDULED")
   void concurrentVisitsForOneAppointment_createExactlyOne() throws Exception {
     // Arrange
     var executor = Executors.newFixedThreadPool(6);

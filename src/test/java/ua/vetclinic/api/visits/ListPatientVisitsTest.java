@@ -53,7 +53,8 @@ class ListPatientVisitsTest {
 
   @Test
   @DisplayName(
-      "REQ-F-034: хронологія відсортована за visitDate за спаданням, незалежно від порядку збереження")
+      "REQ-F-034: хронологія відсортована за visitDate за спаданням, незалежно від порядку "
+          + "збереження")
   void visits_areSortedByVisitDateDescending() throws Exception {
     // Arrange
     String middle = visitOn(patientId, "2026-11-12", "10:00");
@@ -72,7 +73,8 @@ class ListPatientVisitsTest {
 
   @Test
   @DisplayName(
-      "AD-14: сортування за часом слота, а не за часом збереження — прийоми одного дня впорядковані за годиною")
+      "AD-14: сортування за часом слота, а не за часом збереження — прийоми одного дня "
+          + "впорядковані за годиною")
   void sameDayVisits_areOrderedByStartTime() throws Exception {
     // Arrange
     String afternoon = visitOn(patientId, "2026-11-09", "15:00");
@@ -233,7 +235,8 @@ class ListPatientVisitsTest {
 
   @Test
   @DisplayName(
-      "REQ-F-031: інші дані пацієнта лишаються доступними адміністратору — GET /patients/{id} дає 200")
+      "REQ-F-031: інші дані пацієнта лишаються доступними адміністратору — GET /patients/{id} дає "
+          + "200")
   void adminStillReadsPatient() throws Exception {
     // Arrange
     var request = get("/api/v1/patients/" + patientId).with(user("admin").roles("ADMIN"));
@@ -288,7 +291,8 @@ class ListPatientVisitsTest {
 
   @Test
   @DisplayName(
-      "AD-19.2: пагінація — друга сторінка по 2 елементи містить третій і четвертий за спаданням дати")
+      "AD-19.2: пагінація — друга сторінка по 2 елементи містить третій і четвертий за спаданням "
+          + "дати")
   void paging_returnsRequestedPage() throws Exception {
     // Arrange
     visitOn(patientId, "2026-11-23", "10:00");

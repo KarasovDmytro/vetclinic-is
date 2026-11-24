@@ -26,7 +26,8 @@ class InitialAdminSeedTest {
 
   @Test
   @DisplayName(
-      "AD-01.5: початковий адміністратор із налаштувань розгортання входить у систему — 200 і роль ADMIN")
+      "AD-01.5: початковий адміністратор із налаштувань розгортання входить у систему — 200 і "
+          + "роль ADMIN")
   void configuredInitialAdmin_canLogIn() throws Exception {
     // Arrange
     String loginBody =

@@ -42,7 +42,8 @@ class LoginAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: успішний вхід — подія LOGIN_SUCCESS з користувачем, роллю та результатом SUCCESS")
+      "REQ-NF-006: успішний вхід — подія LOGIN_SUCCESS з користувачем, роллю та результатом "
+          + "SUCCESS")
   void successfulLogin_isAudited() throws Exception {
     // Arrange
     String userId =
@@ -79,7 +80,8 @@ class LoginAuditTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-006: невірний пароль наявного користувача — LOGIN_FAILED з actorId і errorCode INVALID_CREDENTIALS")
+      "REQ-NF-006: невірний пароль наявного користувача — LOGIN_FAILED з actorId і errorCode "
+          + "INVALID_CREDENTIALS")
   void wrongPassword_isAuditedWithActorId() throws Exception {
     // Arrange
     String userId =

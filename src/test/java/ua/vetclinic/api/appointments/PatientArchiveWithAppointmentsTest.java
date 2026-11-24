@@ -45,7 +45,8 @@ class PatientArchiveWithAppointmentsTest {
 
   @Test
   @DisplayName(
-      "AD-04.2: у пацієнта є запис SCHEDULED — архівація 409 PATIENT_HAS_SCHEDULED_APPOINTMENTS, картка лишається ACTIVE")
+      "AD-04.2: у пацієнта є запис SCHEDULED — архівація 409 PATIENT_HAS_SCHEDULED_APPOINTMENTS, "
+          + "картка лишається ACTIVE")
   void patientWithScheduledAppointment_cannotBeArchived() throws Exception {
     // Arrange
     createAppointment(mockMvc, doctorId, patientId, slot("2026-12-17", "10:00"));

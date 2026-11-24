@@ -98,7 +98,8 @@ class MedicationAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: дубль назви (409) — MEDICATION_CREATED з outcome=FAILURE і errorCode MEDICATION_NAME_TAKEN")
+      "AD-22.4: дубль назви (409) — MEDICATION_CREATED з outcome=FAILURE і errorCode "
+          + "MEDICATION_NAME_TAKEN")
   void duplicateName_isAuditedAsFailure() throws Exception {
     // Arrange
     String name = uniqueName("Аудит дубль");
@@ -147,7 +148,8 @@ class MedicationAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: редагування на зайняту назву (409) — MEDICATION_UPDATED з outcome=FAILURE і errorCode MEDICATION_NAME_TAKEN")
+      "AD-22.4: редагування на зайняту назву (409) — MEDICATION_UPDATED з outcome=FAILURE і "
+          + "errorCode MEDICATION_NAME_TAKEN")
   void renameToTakenName_isAuditedAsFailure() throws Exception {
     // Arrange
     String takenName = uniqueName("Аудит зайнята");
@@ -171,7 +173,8 @@ class MedicationAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: спроба змінити залишок через PATCH (422) — MEDICATION_UPDATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: спроба змінити залишок через PATCH (422) — MEDICATION_UPDATED з outcome=FAILURE і "
+          + "errorCode VALIDATION_ERROR")
   void quantityInPatch_isAuditedAsFailure() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Аудит залишок"), 1, null);
@@ -219,7 +222,8 @@ class MedicationAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: від'ємний залишок (409) — MEDICATION_STOCK_ADJUSTED з outcome=FAILURE і errorCode NEGATIVE_STOCK")
+      "AD-22.4: від'ємний залишок (409) — MEDICATION_STOCK_ADJUSTED з outcome=FAILURE і errorCode "
+          + "NEGATIVE_STOCK")
   void negativeStock_isAuditedAsFailure() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Аудит мінус"), 1, null);
@@ -241,7 +245,8 @@ class MedicationAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: нульова зміна (422) — MEDICATION_STOCK_ADJUSTED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: нульова зміна (422) — MEDICATION_STOCK_ADJUSTED з outcome=FAILURE і errorCode "
+          + "VALIDATION_ERROR")
   void zeroDelta_isAuditedAsFailure() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Аудит нуль"), 1, null);

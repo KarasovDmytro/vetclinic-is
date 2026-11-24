@@ -49,7 +49,8 @@ class UserDeactivationFailureAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: повторна деактивація (409) — USER_DEACTIVATED з outcome=FAILURE і errorCode USER_ALREADY_DEACTIVATED")
+      "AD-22.4: повторна деактивація (409) — USER_DEACTIVATED з outcome=FAILURE і errorCode "
+          + "USER_ALREADY_DEACTIVATED")
   void deactivateTwice_isAuditedAsFailure() throws Exception {
     // Arrange
     String doctorId =
@@ -77,7 +78,8 @@ class UserDeactivationFailureAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: деактивація останнього адміністратора (409) — USER_DEACTIVATED з outcome=FAILURE і errorCode LAST_ADMIN")
+      "AD-22.4: деактивація останнього адміністратора (409) — USER_DEACTIVATED з outcome=FAILURE "
+          + "і errorCode LAST_ADMIN")
   void deactivateLastAdmin_isAuditedAsFailure() throws Exception {
     // Arrange
     jdbcTemplate.update("UPDATE users SET active = FALSE WHERE role = 'ADMIN'");

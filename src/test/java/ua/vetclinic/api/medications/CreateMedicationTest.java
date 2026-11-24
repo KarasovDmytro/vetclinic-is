@@ -43,7 +43,8 @@ class CreateMedicationTest {
 
   @Test
   @DisplayName(
-      "REQ-F-040: адміністратор додає медикамент — 201, id, назва, залишок і поріг, Location на ресурс")
+      "REQ-F-040: адміністратор додає медикамент — 201, id, назва, залишок і поріг, Location на "
+          + "ресурс")
   void adminCreatesMedication_returns201() throws Exception {
     // Arrange
     String name = uniqueName("Амоксицилін");
@@ -140,7 +141,8 @@ class CreateMedicationTest {
 
   @Test
   @DisplayName(
-      "AD-19.1: createdAt і updatedAt — ISO 8601 із зсувом часового поясу клініки, при створенні рівні")
+      "AD-19.1: createdAt і updatedAt — ISO 8601 із зсувом часового поясу клініки, при створенні "
+          + "рівні")
   void timestamps_areClinicOffsetAndEqual() throws Exception {
     // Arrange
     String requestBody = "{ \"name\": \"" + uniqueName("Час") + "\", \"quantity\": 1 }";

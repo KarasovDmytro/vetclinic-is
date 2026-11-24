@@ -57,7 +57,8 @@ class GetVisitTest {
 
   @Test
   @DisplayName(
-      "REQ-F-033: автор прийому отримує його — 200 з id, appointmentId, patientId, doctorId, visitDate, результатами й препаратами")
+      "REQ-F-033: автор прийому отримує його — 200 з id, appointmentId, patientId, doctorId, "
+          + "visitDate, результатами й препаратами")
   void authorGetsVisit_returnsAllFields() throws Exception {
     // Arrange
     var request = get("/api/v1/visits/" + visitId).header("Authorization", author.bearer());
@@ -113,7 +114,8 @@ class GetVisitTest {
 
   @Test
   @DisplayName(
-      "REQ-F-031: адміністратор отримує 403 і для неіснуючого прийому — наявність запису не розкривається")
+      "REQ-F-031: адміністратор отримує 403 і для неіснуючого прийому — наявність запису не "
+          + "розкривається")
   void adminOnUnknownVisit_returns403Too() throws Exception {
     // Arrange
     var request =

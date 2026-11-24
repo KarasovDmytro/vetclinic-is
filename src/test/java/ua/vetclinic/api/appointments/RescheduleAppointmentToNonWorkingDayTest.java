@@ -54,7 +54,8 @@ class RescheduleAppointmentToNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.3: перенесення запису з п'ятниці на суботу (31.10.2026, 14:00) — 422, поле startsAt, причина NON_WORKING_DAY")
+      "AD-25.3: перенесення запису з п'ятниці на суботу (31.10.2026, 14:00) — 422, поле startsAt, "
+          + "причина NON_WORKING_DAY")
   void rescheduleToSaturday_returns422NonWorkingDay() throws Exception {
     // Arrange
     String saturdayStart = slot("2026-10-31", "14:00");
@@ -72,7 +73,8 @@ class RescheduleAppointmentToNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.3: перенесення запису з п'ятниці на неділю (01.11.2026, 10:00) — 422, причина NON_WORKING_DAY")
+      "AD-25.3: перенесення запису з п'ятниці на неділю (01.11.2026, 10:00) — 422, причина "
+          + "NON_WORKING_DAY")
   void rescheduleToSunday_returns422NonWorkingDay() throws Exception {
     // Arrange
     String sundayStart = slot("2026-11-01", "10:00");
@@ -89,7 +91,8 @@ class RescheduleAppointmentToNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-25.4: після відхиленого перенесення запис лишається на слоті 14:00 30.10.2026 зі статусом SCHEDULED")
+      "AD-25.4: після відхиленого перенесення запис лишається на слоті 14:00 30.10.2026 зі "
+          + "статусом SCHEDULED")
   void rejectedReschedule_keepsAppointmentUnchanged() throws Exception {
     // Arrange
     rescheduleAsAdmin(appointmentId, slot("2026-10-31", "14:00"))
@@ -143,7 +146,8 @@ class RescheduleAppointmentToNonWorkingDayTest {
 
   @Test
   @DisplayName(
-      "AD-18.4: скасований запис переносять на суботу — 422 NON_WORKING_DAY (422 раніше за 409 APPOINTMENT_NOT_SCHEDULED)")
+      "AD-18.4: скасований запис переносять на суботу — 422 NON_WORKING_DAY (422 раніше за 409 "
+          + "APPOINTMENT_NOT_SCHEDULED)")
   void rescheduleCancelledToSaturday_returns422BeforeConflict() throws Exception {
     // Arrange
     cancelAppointment(mockMvc, appointmentId);

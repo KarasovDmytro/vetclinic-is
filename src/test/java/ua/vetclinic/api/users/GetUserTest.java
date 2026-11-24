@@ -26,7 +26,8 @@ class GetUserTest {
 
   @Test
   @DisplayName(
-      "REQ-F-001: адміністратор отримує створеного користувача за адресою з Location — 200 без пароля")
+      "REQ-F-001: адміністратор отримує створеного користувача за адресою з Location — 200 без "
+          + "пароля")
   void adminGetsCreatedUserByLocation_returns200WithoutPassword() throws Exception {
     // Arrange
     String requestBody =

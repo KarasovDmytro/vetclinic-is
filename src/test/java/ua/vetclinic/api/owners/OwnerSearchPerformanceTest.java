@@ -55,7 +55,8 @@ class OwnerSearchPerformanceTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-003: перша сторінка списку без фільтра серед 10 000 записів виконується швидше за 3 с")
+      "REQ-NF-003: перша сторінка списку без фільтра серед 10 000 записів виконується швидше за 3 "
+          + "с")
   void listingAmongTenThousandOwners_isFasterThanThreeSeconds() throws Exception {
     // Arrange
     jdbcTemplate.update(

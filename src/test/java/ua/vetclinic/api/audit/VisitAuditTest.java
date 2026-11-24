@@ -122,7 +122,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: нестача препарату (409) — VISIT_CREATED з outcome=FAILURE і errorCode INSUFFICIENT_STOCK")
+      "AD-22.4: нестача препарату (409) — VISIT_CREATED з outcome=FAILURE і errorCode "
+          + "INSUFFICIENT_STOCK")
   void insufficientStock_isAuditedAsFailure() throws Exception {
     // Arrange
     String medicationId = createMedication(mockMvc, uniqueName("Аудит нестача"), 1, null);
@@ -144,7 +145,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: чужий лікар (403) — VISIT_CREATED з outcome=FAILURE і errorCode NOT_ASSIGNED_DOCTOR")
+      "AD-22.4: чужий лікар (403) — VISIT_CREATED з outcome=FAILURE і errorCode "
+          + "NOT_ASSIGNED_DOCTOR")
   void otherDoctor_isAuditedAsFailure() throws Exception {
     // Arrange
     Doctor other = newDoctor(mockMvc, "Лікар Аудиту Чужий");
@@ -166,7 +168,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: скасований запис (409) — VISIT_CREATED з outcome=FAILURE і errorCode APPOINTMENT_NOT_SCHEDULED")
+      "AD-22.4: скасований запис (409) — VISIT_CREATED з outcome=FAILURE і errorCode "
+          + "APPOINTMENT_NOT_SCHEDULED")
   void cancelledAppointment_isAuditedAsFailure() throws Exception {
     // Arrange
     cancelAppointment(mockMvc, appointmentId);
@@ -187,7 +190,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: архівна картка (409) — VISIT_CREATED з outcome=FAILURE і errorCode PATIENT_ARCHIVED")
+      "AD-22.4: архівна картка (409) — VISIT_CREATED з outcome=FAILURE і errorCode "
+          + "PATIENT_ARCHIVED")
   void archivedPatient_isAuditedAsFailure() throws Exception {
     // Arrange
     jdbcTemplate.update("update patients set status = 'ARCHIVED' where id = ?::uuid", patientId);
@@ -208,7 +212,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: неіснуючий препарат у переліку (422) — VISIT_CREATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: неіснуючий препарат у переліку (422) — VISIT_CREATED з outcome=FAILURE і "
+          + "errorCode VALIDATION_ERROR")
   void unknownMedication_isAuditedAsFailure() throws Exception {
     // Arrange
     String requestBody = visitBodyWith("00000000-0000-4000-8000-000000000b0b", 1);
@@ -260,7 +265,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: редагування чужого прийому (403) — VISIT_UPDATED з outcome=FAILURE і errorCode NOT_VISIT_AUTHOR")
+      "AD-22.4: редагування чужого прийому (403) — VISIT_UPDATED з outcome=FAILURE і errorCode "
+          + "NOT_VISIT_AUTHOR")
   void updateByOtherDoctor_isAuditedAsFailure() throws Exception {
     // Arrange
     String visitId = createVisit(mockMvc, doctor, appointmentId);
@@ -289,7 +295,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: редагування на архівній картці (409) — VISIT_UPDATED з outcome=FAILURE і errorCode PATIENT_ARCHIVED")
+      "AD-22.4: редагування на архівній картці (409) — VISIT_UPDATED з outcome=FAILURE і "
+          + "errorCode PATIENT_ARCHIVED")
   void updateOnArchivedCard_isAuditedAsFailure() throws Exception {
     // Arrange
     String visitId = createVisit(mockMvc, doctor, appointmentId);
@@ -317,7 +324,8 @@ class VisitAuditTest {
 
   @Test
   @DisplayName(
-      "AD-22.4: спроба змінити перелік препаратів (422) — VISIT_UPDATED з outcome=FAILURE і errorCode VALIDATION_ERROR")
+      "AD-22.4: спроба змінити перелік препаратів (422) — VISIT_UPDATED з outcome=FAILURE і "
+          + "errorCode VALIDATION_ERROR")
   void updateMedications_isAuditedAsFailure() throws Exception {
     // Arrange
     String visitId = createVisit(mockMvc, doctor, appointmentId);

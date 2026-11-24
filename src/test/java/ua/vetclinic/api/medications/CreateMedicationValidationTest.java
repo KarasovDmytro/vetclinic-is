@@ -286,7 +286,8 @@ class CreateMedicationValidationTest {
 
   @Test
   @DisplayName(
-      "AD-19.3: невідоме поле — 422, поле unit, причина UNKNOWN_FIELD (одиниці виміру не моделюються)")
+      "AD-19.3: невідоме поле — 422, поле unit, причина UNKNOWN_FIELD (одиниці виміру не "
+          + "моделюються)")
   void unknownField_returns422() throws Exception {
     // Arrange
     String requestBody = body("\"quantity\": 1, \"unit\": \"мг\"");

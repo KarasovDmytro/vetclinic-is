@@ -52,7 +52,8 @@ class ListAppointmentsTest {
 
   @Test
   @DisplayName(
-      "REQ-F-020: адміністратор отримує список записів — 200 з page, pageSize, total, items та полями запису")
+      "REQ-F-020: адміністратор отримує список записів — 200 з page, pageSize, total, items та "
+          + "полями запису")
   void adminListsAppointments_returns200WithPageAndItems() throws Exception {
     // Arrange
     String appointmentId =
@@ -169,7 +170,8 @@ class ListAppointmentsTest {
 
   @Test
   @DisplayName(
-      "AD-20.3: from і to включно в часовому поясі клініки — перший слот першого дня й останній слот останнього дня входять")
+      "AD-20.3: from і to включно в часовому поясі клініки — перший слот першого дня й останній "
+          + "слот останнього дня входять")
   void dateRange_isInclusiveInClinicZone() throws Exception {
     // Arrange
     createAppointment(mockMvc, doctorId, patientId, slot("2026-12-21", "17:30"));
@@ -278,7 +280,8 @@ class ListAppointmentsTest {
 
   @Test
   @DisplayName(
-      "AD-15.4: page і pageSize вибирають зріз відсортованого результату, total — загальна кількість")
+      "AD-15.4: page і pageSize вибирають зріз відсортованого результату, total — загальна "
+          + "кількість")
   void paging_returnsRequestedSliceAndTotal() throws Exception {
     // Arrange
     createAppointment(mockMvc, doctorId, patientId, slot("2026-12-22", "09:00"));

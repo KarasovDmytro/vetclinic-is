@@ -64,7 +64,8 @@ class SchedulePerformanceTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-004: тижневий розклад із 126 зайнятими слотами та 10 000 записів історії інших лікарів — швидше за 2 с")
+      "REQ-NF-004: тижневий розклад із 126 зайнятими слотами та 10 000 записів історії інших "
+          + "лікарів — швидше за 2 с")
   void weeklySchedule_isFasterThanTwoSeconds() throws Exception {
     // Arrange
     String doctorId = insertDoctor("Продуктивність Лікар");

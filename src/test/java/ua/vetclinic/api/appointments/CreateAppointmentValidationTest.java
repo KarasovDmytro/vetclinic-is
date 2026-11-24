@@ -182,7 +182,8 @@ class CreateAppointmentValidationTest {
 
   @Test
   @DisplayName(
-      "AD-05.3: початок о 18:00 — кінець робочого дня, не початок слота — 422 OUTSIDE_WORKING_HOURS")
+      "AD-05.3: початок о 18:00 — кінець робочого дня, не початок слота — 422 "
+          + "OUTSIDE_WORKING_HOURS")
   void atEndOfWorkingDay_returns422OutsideWorkingHours() throws Exception {
     // Arrange
     String requestBody = body("\"" + slot("2026-12-10", "18:00") + "\"");
@@ -231,7 +232,8 @@ class CreateAppointmentValidationTest {
 
   @Test
   @DisplayName(
-      "AD-05.2: робочі години рахуються за часом клініки, а не UTC — 07:00Z це 09:00 у Києві, допустимо")
+      "AD-05.2: робочі години рахуються за часом клініки, а не UTC — 07:00Z це 09:00 у Києві, "
+          + "допустимо")
   void workingHoursAreEvaluatedInClinicZone() throws Exception {
     // Arrange
     String requestBody = body("\"2026-12-11T07:00:00Z\"");

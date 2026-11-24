@@ -60,7 +60,8 @@ class VisitAtomicityTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-005: збій створення сповіщення — 500, прийому немає, запис SCHEDULED, залишок повернуто")
+      "REQ-NF-005: збій створення сповіщення — 500, прийому немає, запис SCHEDULED, залишок "
+          + "повернуто")
   void failureAfterWithdrawal_rollsEverythingBack() throws Exception {
     // Arrange
     doThrow(new IllegalStateException("збій сповіщення"))
@@ -93,7 +94,8 @@ class VisitAtomicityTest {
 
   @Test
   @DisplayName(
-      "REQ-NF-005: без збою той самий запит завершується успіхом — 201, залишок 5, сповіщення створено")
+      "REQ-NF-005: без збою той самий запит завершується успіхом — 201, залишок 5, сповіщення "
+          + "створено")
   void withoutFailure_sameRequestSucceeds() throws Exception {
     // Arrange
     String requestBody = visitBodyWith(medicationId, 5);

@@ -34,7 +34,8 @@ class PatientAccessAndContractTest {
 
   @Test
   @DisplayName(
-      "AD-19.1: createdAt і updatedAt пацієнта — ISO 8601 із зсувом часового поясу клініки, при створенні рівні")
+      "AD-19.1: createdAt і updatedAt пацієнта — ISO 8601 із зсувом часового поясу клініки, при "
+          + "створенні рівні")
   void timestamps_areIsoWithClinicOffsetAndEqualOnCreation() throws Exception {
     // Arrange
     String ownerId = createOwner(mockMvc, "Власник Часу", "+380501234650");
@@ -84,7 +85,8 @@ class PatientAccessAndContractTest {
 
   @Test
   @DisplayName(
-      "REQ-F-004: справжній токен лікаря дозволяє читати пацієнтів, але не створювати, редагувати й архівувати")
+      "REQ-F-004: справжній токен лікаря дозволяє читати пацієнтів, але не створювати, редагувати "
+          + "й архівувати")
   void veterinarianToken_readsButCannotChangePatients() throws Exception {
     // Arrange
     createUser(
@@ -108,7 +110,7 @@ class PatientAccessAndContractTest {
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{ \"name\": \"Нове\" }"));
-    var archive =
+    final var archive =
         mockMvc.perform(
             post("/api/v1/patients/" + patientId + "/archive")
                 .header("Authorization", "Bearer " + token));

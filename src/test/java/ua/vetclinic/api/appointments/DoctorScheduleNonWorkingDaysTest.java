@@ -44,7 +44,8 @@ class DoctorScheduleNonWorkingDaysTest {
 
   @Test
   @DisplayName(
-      "AD-25.6: діапазон п'ятниця–понеділок (30.10–02.11.2026) — 36 слотів: 18 п'ятниці й 18 понеділка")
+      "AD-25.6: діапазон п'ятниця–понеділок (30.10–02.11.2026) — 36 слотів: 18 п'ятниці й 18 "
+          + "понеділка")
   void fridayToMonday_hasOnlyWorkingDaySlots() throws Exception {
     // Arrange
     String from = "2026-10-30";

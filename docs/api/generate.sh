@@ -25,6 +25,8 @@ redocly build-docs spec/api/openapi.yaml \
   --title "Vet Clinic API — довідник REST API"
 
 echo "==> 3/3 Javadoc: docs/api/javadoc/"
+# Без очищення плагін може вважати вихід актуальним і пропустити генерацію (stale detection).
+rm -rf target/reports/apidocs target/maven-javadoc-plugin-stale-data.txt
 ./mvnw -q javadoc:javadoc
 rm -rf "$OUT/javadoc"
 cp -r target/reports/apidocs "$OUT/javadoc"

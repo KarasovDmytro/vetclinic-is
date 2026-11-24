@@ -49,6 +49,14 @@
 
 Порт 5433 вибрано, щоб не конфліктувати з локальним PostgreSQL на 5432.
 
+## API-довідник
+
+[docs/api/index.md](docs/api/index.md) містить таблицю всіх ендпоінтів із посиланнями на статичний довідник REST API ([docs/api/rest/index.html](docs/api/rest/index.html), Redoc з `openapi.yaml`) і на Javadoc ([docs/api/javadoc/index.html](docs/api/javadoc/index.html)). Щоб оновити обидва довідники, потрібні Docker і JDK:
+
+```bash
+./docs/api/generate.sh
+```
+
 ## Тести
 
 ```bash

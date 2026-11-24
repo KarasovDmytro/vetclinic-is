@@ -154,6 +154,8 @@
 					<charset>UTF-8</charset>
 					<doctitle>Vet Clinic API ${project.version} — технічна документація</doctitle>
 					<windowtitle>Vet Clinic API ${project.version}</windowtitle>
+					<!-- Замість типового «Copyright © 1980»: у pom немає inceptionYear/organization. -->
+					<bottom>Vet Clinic API ${project.version}. Контракт REST API: spec/api/openapi.yaml, довідник: docs/api/rest/index.html.</bottom>
 					<!-- Компоненти здебільшого package-private, тому документуємо всі рівні доступу. -->
 					<show>package</show>
 					<!-- Перевіряти синтаксис, HTML, посилання й теги; відсутність коментарів контролює Checkstyle. -->

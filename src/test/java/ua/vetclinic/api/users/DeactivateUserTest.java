@@ -20,89 +20,105 @@ import ua.vetclinic.api.ApiIntegrationTest;
 @ApiIntegrationTest
 class DeactivateUserTest {
 
-	@Autowired
-	private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-	@Test
-	@DisplayName("REQ-F-002: адміністратор деактивує лікаря — 200 і active=false")
-	void adminDeactivatesVeterinarian_returns200WithActiveFalse() throws Exception {
-		// Arrange
-		String requestBody = """
-				{
-				  "email": "hrytsenko@clinic.example",
-				  "fullName": "Гриценко Оксана Миколаївна",
-				  "role": "VETERINARIAN",
-				  "password": "Vet-Passw0rd-2026"
-				}
-				""";
-		MvcResult created = mockMvc.perform(post("/api/v1/users")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(requestBody))
-				.andExpect(status().isCreated())
-				.andReturn();
-		String userId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+  @Test
+  @DisplayName("REQ-F-002: адміністратор деактивує лікаря — 200 і active=false")
+  void adminDeactivatesVeterinarian_returns200WithActiveFalse() throws Exception {
+    // Arrange
+    String requestBody =
+        """
+        {
+          "email": "hrytsenko@clinic.example",
+          "fullName": "Гриценко Оксана Миколаївна",
+          "role": "VETERINARIAN",
+          "password": "Vet-Passw0rd-2026"
+        }
+        """;
+    MvcResult created =
+        mockMvc
+            .perform(
+                post("/api/v1/users")
+                    .with(user("admin").roles("ADMIN"))
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestBody))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String userId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
-		// Act
-		var response = mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf()));
+    // Act
+    var response =
+        mockMvc.perform(
+            post("/api/v1/users/" + userId + "/deactivate")
+                .with(user("admin").roles("ADMIN"))
+                .with(csrf()));
 
-		// Assert
-		response.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id", equalTo(userId)))
-				.andExpect(jsonPath("$.active", equalTo(false)));
-	}
+    // Assert
+    response
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id", equalTo(userId)))
+        .andExpect(jsonPath("$.active", equalTo(false)));
+  }
 
-	@Test
-	@DisplayName("REQ-F-002: деактивація неіснуючого користувача — 404 NOT_FOUND")
-	void adminDeactivatesUnknownUser_returns404NotFound() throws Exception {
-		// Arrange
-		String unknownId = "00000000-0000-4000-8000-000000000405";
+  @Test
+  @DisplayName("REQ-F-002: деактивація неіснуючого користувача — 404 NOT_FOUND")
+  void adminDeactivatesUnknownUser_returns404NotFound() throws Exception {
+    // Arrange
+    String unknownId = "00000000-0000-4000-8000-000000000405";
 
-		// Act
-		var response = mockMvc.perform(post("/api/v1/users/" + unknownId + "/deactivate")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf()));
+    // Act
+    var response =
+        mockMvc.perform(
+            post("/api/v1/users/" + unknownId + "/deactivate")
+                .with(user("admin").roles("ADMIN"))
+                .with(csrf()));
 
-		// Assert
-		response.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
-	}
+    // Assert
+    response.andExpect(status().isNotFound()).andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
+  }
 
-	@Test
-	@DisplayName("REQ-F-002: повторна деактивація — 409 USER_ALREADY_DEACTIVATED")
-	void adminDeactivatesAlreadyDeactivatedUser_returns409UserAlreadyDeactivated() throws Exception {
-		// Arrange
-		String requestBody = """
-				{
-				  "email": "lysenko@clinic.example",
-				  "fullName": "Лисенко Дарина Олегівна",
-				  "role": "VETERINARIAN",
-				  "password": "Vet-Passw0rd-2026"
-				}
-				""";
-		MvcResult created = mockMvc.perform(post("/api/v1/users")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(requestBody))
-				.andExpect(status().isCreated())
-				.andReturn();
-		String userId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
-		mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf()))
-				.andExpect(status().isOk());
+  @Test
+  @DisplayName("REQ-F-002: повторна деактивація — 409 USER_ALREADY_DEACTIVATED")
+  void adminDeactivatesAlreadyDeactivatedUser_returns409UserAlreadyDeactivated() throws Exception {
+    // Arrange
+    String requestBody =
+        """
+        {
+          "email": "lysenko@clinic.example",
+          "fullName": "Лисенко Дарина Олегівна",
+          "role": "VETERINARIAN",
+          "password": "Vet-Passw0rd-2026"
+        }
+        """;
+    MvcResult created =
+        mockMvc
+            .perform(
+                post("/api/v1/users")
+                    .with(user("admin").roles("ADMIN"))
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestBody))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String userId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+    mockMvc
+        .perform(
+            post("/api/v1/users/" + userId + "/deactivate")
+                .with(user("admin").roles("ADMIN"))
+                .with(csrf()))
+        .andExpect(status().isOk());
 
-		// Act
-		var response = mockMvc.perform(post("/api/v1/users/" + userId + "/deactivate")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf()));
+    // Act
+    var response =
+        mockMvc.perform(
+            post("/api/v1/users/" + userId + "/deactivate")
+                .with(user("admin").roles("ADMIN"))
+                .with(csrf()));
 
-		// Assert
-		response.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code", equalTo("USER_ALREADY_DEACTIVATED")));
-	}
+    // Assert
+    response
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code", equalTo("USER_ALREADY_DEACTIVATED")));
+  }
 }

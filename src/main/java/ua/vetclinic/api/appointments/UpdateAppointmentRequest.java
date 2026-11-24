@@ -1,8 +1,6 @@
 package ua.vetclinic.api.appointments;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 
-import jakarta.validation.constraints.NotNull;
-
-public record UpdateAppointmentRequest(@NotNull OffsetDateTime startsAt) {
-}
+public record UpdateAppointmentRequest(@NotNull OffsetDateTime startsAt) {}

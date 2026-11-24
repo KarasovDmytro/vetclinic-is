@@ -21,27 +21,30 @@ import ua.vetclinic.api.ApiIntegrationTest;
 @Transactional
 class LastAdminTest {
 
-	@Autowired
-	private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-	@Autowired
-	private JdbcTemplate jdbcTemplate;
+  @Autowired private JdbcTemplate jdbcTemplate;
 
-	@Test
-	@DisplayName("AD-01.7: деактивація останнього активного адміністратора — 409 LAST_ADMIN")
-	void deactivatingLastActiveAdmin_returns409LastAdmin() throws Exception {
-		// Arrange
-		jdbcTemplate.update("UPDATE users SET active = FALSE WHERE role = 'ADMIN'");
-		String adminId = createUser(mockMvc, "last.admin@clinic.example", "Останній Адмін Петрович", "ADMIN");
+  @Test
+  @DisplayName("AD-01.7: деактивація останнього активного адміністратора — 409 LAST_ADMIN")
+  void deactivatingLastActiveAdmin_returns409LastAdmin() throws Exception {
+    // Arrange
+    jdbcTemplate.update("UPDATE users SET active = FALSE WHERE role = 'ADMIN'");
+    String adminId =
+        createUser(mockMvc, "last.admin@clinic.example", "Останній Адмін Петрович", "ADMIN");
 
-		// Act
-		var response = mockMvc.perform(post("/api/v1/users/" + adminId + "/deactivate")
-				.with(user("admin").roles("ADMIN"))
-				.with(csrf()));
+    // Act
+    var response =
+        mockMvc.perform(
+            post("/api/v1/users/" + adminId + "/deactivate")
+                .with(user("admin").roles("ADMIN"))
+                .with(csrf()));
 
-		// Assert
-		response.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code", equalTo("LAST_ADMIN")))
-				.andExpect(jsonPath("$.message", equalTo("Не можна деактивувати останнього адміністратора")));
-	}
+    // Assert
+    response
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code", equalTo("LAST_ADMIN")))
+        .andExpect(
+            jsonPath("$.message", equalTo("Не можна деактивувати останнього адміністратора")));
+  }
 }

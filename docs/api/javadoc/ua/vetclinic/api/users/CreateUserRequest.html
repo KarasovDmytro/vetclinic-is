@@ -102,14 +102,14 @@ initTheme();
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>Record Components:</dt>
-<dd><code><span id="param-email">email</span></code> - унікальний email; зберігається в нижньому регістрі</dd>
+<dd><code><span id="param-email">email</span></code> - унікальний email до 254 символів; зберігається в нижньому регістрі</dd>
 <dd><code><span id="param-fullName">fullName</span></code> - ПІБ, до 150 символів</dd>
 <dd><code><span id="param-role">role</span></code> - роль у системі</dd>
 <dd><code><span id="param-password">password</span></code> - пароль від 8 до 72 символів; зберігається лише хеш BCrypt</dd>
 </dl>
 <hr>
 <div class="horizontal-scroll">
-<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">CreateUserRequest</span>(@NotBlank @Email <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;email, @NotBlank @Size(max=150) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;fullName, @NotNull <a href="Role.html" title="enum class in ua.vetclinic.api.users">Role</a>&nbsp;role, @NotBlank @Size(min=8,max=72) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;password)
+<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">CreateUserRequest</span>(@NotBlank @Email @Size(max=254) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;email, @NotBlank @Size(max=150) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;fullName, @NotNull <a href="Role.html" title="enum class in ua.vetclinic.api.users">Role</a>&nbsp;role, @NotBlank @Size(min=8,max=72) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;password)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Record.html" title="class in java.lang" class="external-link">Record</a></span></div>
 <div class="block">Тіло запиту <code>POST /api/v1/users</code>: обліковий запис адміністратора або лікаря.</div>
 </div>
@@ -124,7 +124,7 @@ initTheme();
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,ua.vetclinic.api.users.Role,java.lang.String)" class="member-name-link">CreateUserRequest</a><wbr>(@NotBlank @Email <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;email,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,ua.vetclinic.api.users.Role,java.lang.String)" class="member-name-link">CreateUserRequest</a><wbr>(@NotBlank @Email @Size(max=254) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;email,
  @NotBlank @Size(max=150) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;fullName,
  @NotNull <a href="Role.html" title="enum class in ua.vetclinic.api.users">Role</a>&nbsp;role,
  @NotBlank @Size(min=8,max=72) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;password)</code></div>
@@ -145,7 +145,7 @@ initTheme();
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>@NotBlank @Email <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>@NotBlank @Email @Size(max=254) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#email()" class="member-name-link">email</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-email"><code>email</code></a> record component.</div>
@@ -201,8 +201,8 @@ initTheme();
 <section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,ua.vetclinic.api.users.Role,java.lang.String)">
 <h3>CreateUserRequest</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">CreateUserRequest</span><wbr><span class="parameters">(@NotBlank @Email
- @NotBlank @Email <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;email,
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">CreateUserRequest</span><wbr><span class="parameters">(@NotBlank @Email @Size(max=254)
+ @NotBlank @Email @Size(max=254) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;email,
  @NotBlank @Size(max=150)
  @NotBlank @Size(max=150) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a>&nbsp;fullName,
  @NotNull
@@ -281,7 +281,8 @@ initTheme();
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="annotations">@NotBlank
 @Email
-</span><span class="modifiers">public</span>&nbsp;<span class="return-type">@NotBlank @Email <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">email</span>()</div>
+@Size(max=254)
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type">@NotBlank @Email @Size(max=254) <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">email</span>()</div>
 <div class="block">Returns the value of the <a href="#param-email"><code>email</code></a> record component.</div>
 <dl class="notes">
 <dt>Returns:</dt>

@@ -28,6 +28,10 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+		<checkstyle.version>14.4.0</checkstyle.version>
+		<spotless-maven-plugin.version>3.12.0</spotless-maven-plugin.version>
+		<google-java-format.version>2.0.0</google-java-format.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -104,6 +108,12 @@
 			<artifactId>testcontainers-postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Розбір spec/api/openapi.yaml в OpenApiContractConsistencyTest; версію задає Spring Boot. -->
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -113,6 +123,64 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>-Duser.timezone=Europe/Kyiv -Dvetclinic.logging.dir=target/test-logs</argLine>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${maven-checkstyle-plugin.version}</version>
+				<dependencies>
+					<dependency>
+						<groupId>com.puppycrawl.tools</groupId>
+						<artifactId>checkstyle</artifactId>
+						<version>${checkstyle.version}</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<configLocation>google_checks.xml</configLocation>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<consoleOutput>true</consoleOutput>
+					<violationSeverity>warning</violationSeverity>
+					<failOnViolation>false</failOnViolation>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<!-- Коментарі українською: кодування джерел, HTML-файлів і meta charset сторінок. -->
+					<encoding>UTF-8</encoding>
+					<docencoding>UTF-8</docencoding>
+					<charset>UTF-8</charset>
+					<doctitle>Vet Clinic API ${project.version} — технічна документація</doctitle>
+					<windowtitle>Vet Clinic API ${project.version}</windowtitle>
+					<!-- Замість типового «Copyright © 1980»: у pom немає inceptionYear/organization. -->
+					<bottom>Vet Clinic API ${project.version}. Контракт REST API: spec/api/openapi.yaml, довідник: docs/api/rest/index.html.</bottom>
+					<!-- Компоненти здебільшого package-private, тому документуємо всі рівні доступу. -->
+					<show>package</show>
+					<!-- Перевіряти синтаксис, HTML, посилання й теги; відсутність коментарів контролює Checkstyle. -->
+					<doclint>all,-missing</doclint>
+					<failOnError>true</failOnError>
+					<failOnWarnings>true</failOnWarnings>
+					<quiet>true</quiet>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>${spotless-maven-plugin.version}</version>
+				<configuration>
+					<java>
+						<includes>
+							<include>src/main/java/**/*.java</include>
+							<include>src/test/java/**/*.java</include>
+						</includes>
+						<googleJavaFormat>
+							<version>${google-java-format.version}</version>
+							<style>GOOGLE</style>
+						</googleJavaFormat>
+						<removeUnusedImports/>
+					</java>
 				</configuration>
 			</plugin>
 			<plugin>

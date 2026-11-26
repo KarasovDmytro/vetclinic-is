@@ -21,147 +21,158 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
-import ua.vetclinic.api.ApiIntegrationTest;
 import org.springframework.test.web.servlet.ResultActions;
+import ua.vetclinic.api.ApiIntegrationTest;
 
-/** REQ-F-047, AD-16.2, AD-20.2: позначення сповіщення прочитаним (операція markNotificationRead). */
+/**
+ * REQ-F-047, AD-16.2, AD-20.2: позначення сповіщення прочитаним (операція markNotificationRead).
+ */
 @ApiIntegrationTest
 class MarkNotificationReadTest {
 
-	@Autowired
-	private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-	private String medicationId;
+  private String medicationId;
 
-	private String notificationId;
+  private String notificationId;
 
-	@BeforeEach
-	void createNotification() throws Exception {
-		Doctor doctor = newDoctor(mockMvc, "Лікар Прочитання");
-		medicationId = createMedication(mockMvc, uniqueName("Прочитання"), 5, 10);
-		withdraw(mockMvc, doctor, medicationId, 1, "2026-11-30", "10:00");
-		notificationId = (String) notificationsOf(mockMvc, medicationId).get(0).get("id");
-	}
+  @BeforeEach
+  void createNotification() throws Exception {
+    Doctor doctor = newDoctor(mockMvc, "Лікар Прочитання");
+    medicationId = createMedication(mockMvc, uniqueName("Прочитання"), 5, 10);
+    withdraw(mockMvc, doctor, medicationId, 1, "2026-11-30", "10:00");
+    notificationId = (String) notificationsOf(mockMvc, medicationId).get(0).get("id");
+  }
 
-	private ResultActions markAsAdmin(String id) throws Exception {
-		return mockMvc.perform(post("/api/v1/notifications/" + id + "/mark-read").with(user("admin").roles("ADMIN")));
-	}
+  private ResultActions markAsAdmin(String id) throws Exception {
+    return mockMvc.perform(
+        post("/api/v1/notifications/" + id + "/mark-read").with(user("admin").roles("ADMIN")));
+  }
 
-	@Test
-	@DisplayName("REQ-F-047: адміністратор позначає сповіщення прочитаним — 200, read true, решта полів без змін")
-	void adminMarksRead_returns200() throws Exception {
-		// Arrange
-		String id = notificationId;
+  @Test
+  @DisplayName(
+      "REQ-F-047: адміністратор позначає сповіщення прочитаним — 200, read true, решта полів без "
+          + "змін")
+  void adminMarksRead_returns200() throws Exception {
+    // Arrange
+    String id = notificationId;
 
-		// Act
-		var response = markAsAdmin(id);
+    // Act
+    var response = markAsAdmin(id);
 
-		// Assert
-		response.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id", equalTo(id)))
-				.andExpect(jsonPath("$.type", equalTo("LOW_STOCK")))
-				.andExpect(jsonPath("$.medicationId", equalTo(medicationId)))
-				.andExpect(jsonPath("$.quantity", equalTo(4)))
-				.andExpect(jsonPath("$.minThreshold", equalTo(10)))
-				.andExpect(jsonPath("$.read", equalTo(true)))
-				.andExpect(jsonPath("$.createdAt", matchesPattern(CLINIC_OFFSET_TIMESTAMP)));
-	}
+    // Assert
+    response
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id", equalTo(id)))
+        .andExpect(jsonPath("$.type", equalTo("LOW_STOCK")))
+        .andExpect(jsonPath("$.medicationId", equalTo(medicationId)))
+        .andExpect(jsonPath("$.quantity", equalTo(4)))
+        .andExpect(jsonPath("$.minThreshold", equalTo(10)))
+        .andExpect(jsonPath("$.read", equalTo(true)))
+        .andExpect(jsonPath("$.createdAt", matchesPattern(CLINIC_OFFSET_TIMESTAMP)));
+  }
 
-	@Test
-	@DisplayName("AD-16.2: повторне позначення ідемпотентне — другий виклик також 200 з read true")
-	void markingTwice_returns200Both() throws Exception {
-		// Arrange
-		markAsAdmin(notificationId).andExpect(status().isOk());
+  @Test
+  @DisplayName("AD-16.2: повторне позначення ідемпотентне — другий виклик також 200 з read true")
+  void markingTwice_returns200Both() throws Exception {
+    // Arrange
+    markAsAdmin(notificationId).andExpect(status().isOk());
 
-		// Act
-		var response = markAsAdmin(notificationId);
+    // Act
+    var response = markAsAdmin(notificationId);
 
-		// Assert
-		response.andExpect(status().isOk())
-				.andExpect(jsonPath("$.read", equalTo(true)));
-	}
+    // Assert
+    response.andExpect(status().isOk()).andExpect(jsonPath("$.read", equalTo(true)));
+  }
 
-	@Test
-	@DisplayName("AD-20.2: прапорець спільний для всіх адміністраторів — після прочитання одним інший бачить read true")
-	void readFlag_isSharedBetweenAdmins() throws Exception {
-		// Arrange
-		markAsAdmin(notificationId).andExpect(status().isOk());
+  @Test
+  @DisplayName(
+      "AD-20.2: прапорець спільний для всіх адміністраторів — після прочитання одним інший бачить "
+          + "read true")
+  void readFlag_isSharedBetweenAdmins() throws Exception {
+    // Arrange
+    markAsAdmin(notificationId).andExpect(status().isOk());
 
-		// Act
-		var notifications = notificationsOf(mockMvc, medicationId);
+    // Act
+    var notifications = notificationsOf(mockMvc, medicationId);
 
-		// Assert
-		assertThat(notifications.get(0).get("read"), equalTo(true));
-	}
+    // Assert
+    assertThat(notifications.get(0).get("read"), equalTo(true));
+  }
 
-	@Test
-	@DisplayName("AD-18.2: сповіщення з таким id немає — 404 NOT_FOUND")
-	void unknownNotification_returns404() throws Exception {
-		// Arrange
-		String unknownId = "00000000-0000-4000-8000-000000000b0a";
+  @Test
+  @DisplayName("AD-18.2: сповіщення з таким id немає — 404 NOT_FOUND")
+  void unknownNotification_returns404() throws Exception {
+    // Arrange
+    String unknownId = "00000000-0000-4000-8000-000000000b0a";
 
-		// Act
-		var response = markAsAdmin(unknownId);
+    // Act
+    var response = markAsAdmin(unknownId);
 
-		// Assert
-		response.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
-	}
+    // Assert
+    response.andExpect(status().isNotFound()).andExpect(jsonPath("$.code", equalTo("NOT_FOUND")));
+  }
 
-	@Test
-	@DisplayName("AD-18.2: id сповіщення не UUID — 400 MALFORMED_REQUEST")
-	void malformedNotificationId_returns400() throws Exception {
-		// Arrange
-		String malformedId = "не-uuid";
+  @Test
+  @DisplayName("AD-18.2: id сповіщення не UUID — 400 MALFORMED_REQUEST")
+  void malformedNotificationId_returns400() throws Exception {
+    // Arrange
+    String malformedId = "не-uuid";
 
-		// Act
-		var response = markAsAdmin(malformedId);
+    // Act
+    var response = markAsAdmin(malformedId);
 
-		// Assert
-		response.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code", equalTo("MALFORMED_REQUEST")));
-	}
+    // Assert
+    response
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code", equalTo("MALFORMED_REQUEST")));
+  }
 
-	@Test
-	@DisplayName("REQ-F-031: лікар не може позначати сповіщення — 403 FORBIDDEN, сповіщення лишається непрочитаним")
-	void veterinarian_returns403() throws Exception {
-		// Arrange
-		var request = post("/api/v1/notifications/" + notificationId + "/mark-read")
-				.with(user("vet").roles("VETERINARIAN"));
+  @Test
+  @DisplayName(
+      "REQ-F-031: лікар не може позначати сповіщення — 403 FORBIDDEN, сповіщення лишається "
+          + "непрочитаним")
+  void veterinarian_returns403() throws Exception {
+    // Arrange
+    var request =
+        post("/api/v1/notifications/" + notificationId + "/mark-read")
+            .with(user("vet").roles("VETERINARIAN"));
 
-		// Act
-		var response = mockMvc.perform(request);
+    // Act
+    var response = mockMvc.perform(request);
 
-		// Assert
-		response.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code", equalTo("FORBIDDEN")));
-		assertThat(notificationsOf(mockMvc, medicationId).get(0).get("read"), equalTo(false));
-	}
+    // Assert
+    response.andExpect(status().isForbidden()).andExpect(jsonPath("$.code", equalTo("FORBIDDEN")));
+    assertThat(notificationsOf(mockMvc, medicationId).get(0).get("read"), equalTo(false));
+  }
 
-	@Test
-	@DisplayName("REQ-NF-002: mark-read без токена — 401 UNAUTHORIZED")
-	void withoutToken_returns401() throws Exception {
-		// Arrange
-		var request = post("/api/v1/notifications/" + notificationId + "/mark-read");
+  @Test
+  @DisplayName("REQ-NF-002: mark-read без токена — 401 UNAUTHORIZED")
+  void withoutToken_returns401() throws Exception {
+    // Arrange
+    var request = post("/api/v1/notifications/" + notificationId + "/mark-read");
 
-		// Act
-		var response = mockMvc.perform(request);
+    // Act
+    var response = mockMvc.perform(request);
 
-		// Assert
-		response.andExpect(status().isUnauthorized());
-	}
+    // Assert
+    response.andExpect(status().isUnauthorized());
+  }
 
-	@Test
-	@DisplayName("AD-19.4: GET /notifications/{id}/mark-read — 405 METHOD_NOT_ALLOWED, дія виконується лише через POST")
-	void getMarkRead_returns405() throws Exception {
-		// Arrange
-		var request = get("/api/v1/notifications/" + notificationId + "/mark-read")
-				.with(user("admin").roles("ADMIN"));
+  @Test
+  @DisplayName(
+      "AD-19.4: GET /notifications/{id}/mark-read — 405 METHOD_NOT_ALLOWED, дія виконується лише "
+          + "через POST")
+  void getMarkRead_returns405() throws Exception {
+    // Arrange
+    var request =
+        get("/api/v1/notifications/" + notificationId + "/mark-read")
+            .with(user("admin").roles("ADMIN"));
 
-		// Act
-		var response = mockMvc.perform(request);
+    // Act
+    var response = mockMvc.perform(request);
 
-		// Assert
-		response.andExpect(status().isMethodNotAllowed());
-	}
+    // Assert
+    response.andExpect(status().isMethodNotAllowed());
+  }
 }

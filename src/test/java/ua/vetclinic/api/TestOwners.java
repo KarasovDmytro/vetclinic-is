@@ -11,22 +11,36 @@ import org.springframework.test.web.servlet.MockMvc;
 /** Спільний крок Arrange для інтеграційних тестів: реєстрація власника. */
 public final class TestOwners {
 
-	private TestOwners() {
-	}
+  private TestOwners() {}
 
-	public static String createOwner(MockMvc mockMvc, String fullName, String phone) throws Exception {
-		String requestBody = """
-				{
-				  "fullName": "%s",
-				  "phone": "%s"
-				}
-				""".formatted(fullName, phone);
-		var created = mockMvc.perform(post("/api/v1/owners")
-				.with(user("admin").roles("ADMIN"))
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(requestBody))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
-	}
+  /**
+   * Реєструє власника лише з обов'язковими полями від імені адміністратора.
+   *
+   * @param mockMvc клієнт тестового застосунку
+   * @param fullName ПІБ
+   * @param phone телефон у форматі {@code +380...}
+   * @return ідентифікатор створеного власника
+   * @throws Exception якщо запит не повернув 201
+   */
+  public static String createOwner(MockMvc mockMvc, String fullName, String phone)
+      throws Exception {
+    String requestBody =
+        """
+        {
+          "fullName": "%s",
+          "phone": "%s"
+        }
+        """
+            .formatted(fullName, phone);
+    var created =
+        mockMvc
+            .perform(
+                post("/api/v1/owners")
+                    .with(user("admin").roles("ADMIN"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestBody))
+            .andExpect(status().isCreated())
+            .andReturn();
+    return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+  }
 }

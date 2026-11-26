@@ -1,4 +1,11 @@
 package ua.vetclinic.api.auth;
 
-record LoginResponse(String accessToken, String tokenType, long expiresIn, AuthUser user) {
-}
+/**
+ * Відповідь на успішний вхід.
+ *
+ * @param accessToken підписаний JWT
+ * @param tokenType завжди {@code Bearer}
+ * @param expiresIn термін дії токена, секунд
+ * @param user автентифікований користувач
+ */
+record LoginResponse(String accessToken, String tokenType, long expiresIn, AuthUser user) {}

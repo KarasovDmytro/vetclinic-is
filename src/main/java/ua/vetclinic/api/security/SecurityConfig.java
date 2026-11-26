@@ -1,9 +1,7 @@
 package ua.vetclinic.api.security;
 
-import java.io.IOException;
-
 import jakarta.servlet.http.HttpServletResponse;
-
+import java.io.IOException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -22,72 +20,112 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import tools.jackson.databind.ObjectMapper;
 import ua.vetclinic.api.common.ErrorResponse;
 
+/**
+ * Налаштування Spring Security: stateless-автентифікація bearer-токеном і доступ до ендпоінтів за
+ * ролями {@code ADMIN} та {@code VETERINARIAN} (REQ-F-004, REQ-NF-002).
+ *
+ * <p>Відповіді 401 і 403 мають той самий формат {@code ErrorResponse}, що й решта помилок API;
+ * відповідь 401 містить заголовок {@code WWW-Authenticate: Bearer}.
+ */
 @Configuration
 class SecurityConfig {
 
-	private static JwtAuthenticationConverter jwtAuthenticationConverter() {
-		JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
-		authorities.setAuthoritiesClaimName("role");
-		authorities.setAuthorityPrefix("ROLE_");
-		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-		converter.setJwtGrantedAuthoritiesConverter(authorities);
-		return converter;
-	}
+  private static JwtAuthenticationConverter jwtAuthenticationConverter() {
+    JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
+    authorities.setAuthoritiesClaimName("role");
+    authorities.setAuthorityPrefix("ROLE_");
+    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+    converter.setJwtGrantedAuthoritiesConverter(authorities);
+    return converter;
+  }
 
-	@Bean
-	PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder(10);
-	}
+  @Bean
+  PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder(10);
+  }
 
-	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
-		AuthenticationEntryPoint entryPoint = (request, response, exception) -> {
-			response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
-			writeError(objectMapper, response,
-					ErrorResponse.of(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Потрібна автентифікація", request));
-		};
-		AccessDeniedHandler accessDeniedHandler = (request, response, exception) -> writeError(objectMapper,
-				response, ErrorResponse.of(HttpStatus.FORBIDDEN, "FORBIDDEN", "Недостатньо прав", request));
-		http.csrf(csrf -> csrf.disable())
-				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(requests -> requests
-				.requestMatchers("/api/v1/auth/login").permitAll()
-				.requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.GET, "/api/v1/owners", "/api/v1/owners/**")
-						.hasAnyRole("ADMIN", "VETERINARIAN")
-				.requestMatchers("/api/v1/owners", "/api/v1/owners/**").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.GET, "/api/v1/patients/*/visits").hasRole("VETERINARIAN")
-				.requestMatchers("/api/v1/visits", "/api/v1/visits/**").hasRole("VETERINARIAN")
-				.requestMatchers(HttpMethod.POST, "/api/v1/appointments/*/visit").hasRole("VETERINARIAN")
-				.requestMatchers("/api/v1/notifications", "/api/v1/notifications/**").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.GET, "/api/v1/patients", "/api/v1/patients/*")
-						.hasAnyRole("ADMIN", "VETERINARIAN")
-				.requestMatchers("/api/v1/patients", "/api/v1/patients/**").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.GET, "/api/v1/doctors", "/api/v1/doctors/**")
-						.hasAnyRole("ADMIN", "VETERINARIAN")
-				.requestMatchers("/api/v1/doctors", "/api/v1/doctors/**").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.GET, "/api/v1/appointments", "/api/v1/appointments/*")
-						.hasAnyRole("ADMIN", "VETERINARIAN")
-				.requestMatchers("/api/v1/appointments", "/api/v1/appointments/**").hasRole("ADMIN")
-				.requestMatchers(HttpMethod.GET, "/api/v1/medications", "/api/v1/medications/*")
-						.hasAnyRole("ADMIN", "VETERINARIAN")
-				.requestMatchers("/api/v1/medications", "/api/v1/medications/**").hasRole("ADMIN")
-				.anyRequest().authenticated())
-				.oauth2ResourceServer(resourceServer -> resourceServer
-						.authenticationEntryPoint(entryPoint)
-						.accessDeniedHandler(accessDeniedHandler)
-						.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-				.exceptionHandling(handling -> handling
-						.authenticationEntryPoint(entryPoint)
-						.accessDeniedHandler(accessDeniedHandler));
-		return http.build();
-	}
+  /**
+   * Описує правила доступу до ендпоінтів за ролями. Порядок правил важливий: спершу дозволи на
+   * читання для обох ролей, потім обмеження змін адміністратором.
+   *
+   * @param http конструктор налаштувань безпеки
+   * @param objectMapper серіалізатор тіла помилок 401 і 403
+   * @return ланцюжок фільтрів безпеки
+   * @throws Exception якщо налаштування не вдалося зібрати
+   */
+  @Bean
+  SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper)
+      throws Exception {
+    AuthenticationEntryPoint entryPoint =
+        (request, response, exception) -> {
+          response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
+          writeError(
+              objectMapper,
+              response,
+              ErrorResponse.of(
+                  HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Потрібна автентифікація", request));
+        };
+    AccessDeniedHandler accessDeniedHandler =
+        (request, response, exception) ->
+            writeError(
+                objectMapper,
+                response,
+                ErrorResponse.of(HttpStatus.FORBIDDEN, "FORBIDDEN", "Недостатньо прав", request));
+    http.csrf(csrf -> csrf.disable())
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(requests ->
+            requests
+                .requestMatchers("/api/v1/auth/login")
+                .permitAll()
+                .requestMatchers("/api/v1/users", "/api/v1/users/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/owners", "/api/v1/owners/**")
+                .hasAnyRole("ADMIN", "VETERINARIAN")
+                .requestMatchers("/api/v1/owners", "/api/v1/owners/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/patients/*/visits")
+                .hasRole("VETERINARIAN")
+                .requestMatchers("/api/v1/visits", "/api/v1/visits/**")
+                .hasRole("VETERINARIAN")
+                .requestMatchers(HttpMethod.POST, "/api/v1/appointments/*/visit")
+                .hasRole("VETERINARIAN")
+                .requestMatchers("/api/v1/notifications", "/api/v1/notifications/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/patients", "/api/v1/patients/*")
+                .hasAnyRole("ADMIN", "VETERINARIAN")
+                .requestMatchers("/api/v1/patients", "/api/v1/patients/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/doctors", "/api/v1/doctors/**")
+                .hasAnyRole("ADMIN", "VETERINARIAN")
+                .requestMatchers("/api/v1/doctors", "/api/v1/doctors/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/appointments", "/api/v1/appointments/*")
+                .hasAnyRole("ADMIN", "VETERINARIAN")
+                .requestMatchers("/api/v1/appointments", "/api/v1/appointments/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/medications", "/api/v1/medications/*")
+                .hasAnyRole("ADMIN", "VETERINARIAN")
+                .requestMatchers("/api/v1/medications", "/api/v1/medications/**")
+                .hasRole("ADMIN")
+                .anyRequest()
+                .authenticated())
+        .oauth2ResourceServer(resourceServer ->
+            resourceServer
+                .authenticationEntryPoint(entryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+        .exceptionHandling(handling ->
+            handling.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDeniedHandler));
+    return http.build();
+  }
 
-	private static void writeError(ObjectMapper objectMapper, HttpServletResponse response, ErrorResponse body)
-			throws IOException {
-		response.setStatus(body.status());
-		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-		response.setCharacterEncoding("UTF-8");
-		response.getWriter().write(objectMapper.writeValueAsString(body));
-	}
+  private static void writeError(
+      ObjectMapper objectMapper, HttpServletResponse response, ErrorResponse body)
+      throws IOException {
+    response.setStatus(body.status());
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.setCharacterEncoding("UTF-8");
+    response.getWriter().write(objectMapper.writeValueAsString(body));
+  }
 }

@@ -5,26 +5,39 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 
 /** Доступ інших модулів до пацієнтів без відкриття сховища. */
 @Service
 public class PatientLookup {
 
-	private final PatientRepository patientRepository;
+  private final PatientRepository patientRepository;
 
-	PatientLookup(PatientRepository patientRepository) {
-		this.patientRepository = patientRepository;
-	}
+  PatientLookup(PatientRepository patientRepository) {
+    this.patientRepository = patientRepository;
+  }
 
-	public Optional<PatientInfo> find(UUID patientId) {
-		return patientRepository.findById(patientId).map(PatientEntity::toInfo);
-	}
+  /**
+   * Знаходить пацієнта за ідентифікатором.
+   *
+   * @param patientId ідентифікатор пацієнта
+   * @return пацієнт або порожньо, якщо його немає
+   */
+  public Optional<PatientInfo> find(UUID patientId) {
+    return patientRepository.findById(patientId).map(PatientEntity::toInfo);
+  }
 
-	public Map<UUID, String> namesOf(Collection<UUID> patientIds) {
-		Map<UUID, String> names = new HashMap<>();
-		patientRepository.findAllById(patientIds).forEach(patient -> names.put(patient.toInfo().id(), patient.toInfo().name()));
-		return names;
-	}
+  /**
+   * Повертає клички пацієнтів одним запитом (для сітки розкладу).
+   *
+   * @param patientIds ідентифікатори пацієнтів
+   * @return кличка за ідентифікатором; відсутні пацієнти пропускаються
+   */
+  public Map<UUID, String> namesOf(Collection<UUID> patientIds) {
+    Map<UUID, String> names = new HashMap<>();
+    patientRepository
+        .findAllById(patientIds)
+        .forEach(patient -> names.put(patient.toInfo().id(), patient.toInfo().name()));
+    return names;
+  }
 }

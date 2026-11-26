@@ -1,12 +1,10 @@
 package ua.vetclinic.api.medications;
 
+import jakarta.persistence.criteria.Predicate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
-import jakarta.persistence.criteria.Predicate;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,115 +19,194 @@ import ua.vetclinic.api.common.RequestValidationException;
 import ua.vetclinic.api.common.ResourceNotFoundException;
 import ua.vetclinic.api.common.Strings;
 
+/**
+ * Бізнес-логіка каталогу медикаментів: унікальність назви, ручне коригування залишку в межах від 0
+ * до 1 000 000 і журнал аудиту кожної зміни.
+ */
 @Service
 class MedicationService {
 
-	private static final int MAX_QUANTITY = 1_000_000;
+  private static final int MAX_QUANTITY = 1_000_000;
 
-	private static final String VALIDATION_ERROR = "VALIDATION_ERROR";
+  private static final String VALIDATION_ERROR = "VALIDATION_ERROR";
 
-	private static final String NAME_TAKEN = "MEDICATION_NAME_TAKEN";
+  private static final String NAME_TAKEN = "MEDICATION_NAME_TAKEN";
 
-	private final MedicationRepository medicationRepository;
+  private final MedicationRepository medicationRepository;
 
-	private final AuditLog auditLog;
+  private final AuditLog auditLog;
 
-	MedicationService(MedicationRepository medicationRepository, AuditLog auditLog) {
-		this.medicationRepository = medicationRepository;
-		this.auditLog = auditLog;
-	}
+  MedicationService(MedicationRepository medicationRepository, AuditLog auditLog) {
+    this.medicationRepository = medicationRepository;
+    this.auditLog = auditLog;
+  }
 
-	MedicationResponse create(CreateMedicationRequest request) {
-		if (medicationRepository.existsByNameIgnoreCase(request.name())) {
-			throw failed("MEDICATION_CREATED", null, NAME_TAKEN, nameTaken());
-		}
-		MedicationEntity medication = new MedicationEntity(UUID.randomUUID(), request.name(), request.quantity(),
-				request.minThreshold(), OffsetDateTime.now());
-		MedicationResponse created = medicationRepository.save(medication).toResponse();
-		auditLog.success("MEDICATION_CREATED", "MEDICATION", created.id());
-		return created;
-	}
+  /**
+   * Додає медикамент до каталогу.
+   *
+   * @param request назва, залишок і поріг
+   * @return створений медикамент
+   * @throws ConflictException {@code MEDICATION_NAME_TAKEN}, якщо назва вже є (без урахування
+   *     регістру)
+   */
+  MedicationResponse create(CreateMedicationRequest request) {
+    if (medicationRepository.existsByNameIgnoreCase(request.name())) {
+      throw failed("MEDICATION_CREATED", null, NAME_TAKEN, nameTaken());
+    }
+    MedicationEntity medication =
+        new MedicationEntity(
+            UUID.randomUUID(),
+            request.name(),
+            request.quantity(),
+            request.minThreshold(),
+            OffsetDateTime.now());
+    MedicationResponse created = medicationRepository.save(medication).toResponse();
+    auditLog.success("MEDICATION_CREATED", "MEDICATION", created.id());
+    return created;
+  }
 
-	MedicationResponse get(UUID medicationId) {
-		return findOrThrow(medicationId).toResponse();
-	}
+  /**
+   * Повертає медикамент за ідентифікатором.
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @return медикамент
+   * @throws ResourceNotFoundException якщо медикаменту немає
+   */
+  MedicationResponse get(UUID medicationId) {
+    return findOrThrow(medicationId).toResponse();
+  }
 
-	MedicationResponse update(UUID medicationId, UpdateMedicationRequest request) {
-		if (request.isEmpty()) {
-			throw failed("MEDICATION_UPDATED", medicationId, VALIDATION_ERROR, new EmptyBodyException());
-		}
-		List<ErrorDetail> violations = request.violations();
-		if (!violations.isEmpty()) {
-			throw failed("MEDICATION_UPDATED", medicationId, VALIDATION_ERROR,
-					new RequestValidationException(violations));
-		}
-		MedicationEntity medication = findOrThrow(medicationId);
-		if (request.isProvided("name")
-				&& medicationRepository.existsByNameIgnoreCaseAndIdNot(request.name(), medicationId)) {
-			throw failed("MEDICATION_UPDATED", medicationId, NAME_TAKEN, nameTaken());
-		}
-		medication.apply(request, OffsetDateTime.now());
-		MedicationResponse updated = medicationRepository.save(medication).toResponse();
-		auditLog.success("MEDICATION_UPDATED", "MEDICATION", medicationId);
-		return updated;
-	}
+  /**
+   * Змінює назву та/або поріг; спроба передати {@code quantity} відхиляється (AD-08.3).
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @param request поля для зміни
+   * @return оновлений медикамент
+   * @throws EmptyBodyException якщо тіло не містить жодного поля
+   * @throws RequestValidationException якщо передано {@code quantity} або назва {@code null}
+   * @throws ResourceNotFoundException якщо медикаменту немає
+   * @throws ConflictException {@code MEDICATION_NAME_TAKEN}, якщо нова назва вже є
+   */
+  MedicationResponse update(UUID medicationId, UpdateMedicationRequest request) {
+    if (request.isEmpty()) {
+      throw failed("MEDICATION_UPDATED", medicationId, VALIDATION_ERROR, new EmptyBodyException());
+    }
+    List<ErrorDetail> violations = request.violations();
+    if (!violations.isEmpty()) {
+      throw failed(
+          "MEDICATION_UPDATED",
+          medicationId,
+          VALIDATION_ERROR,
+          new RequestValidationException(violations));
+    }
+    MedicationEntity medication = findOrThrow(medicationId);
+    if (request.isProvided("name")
+        && medicationRepository.existsByNameIgnoreCaseAndIdNot(request.name(), medicationId)) {
+      throw failed("MEDICATION_UPDATED", medicationId, NAME_TAKEN, nameTaken());
+    }
+    medication.apply(request, OffsetDateTime.now());
+    MedicationResponse updated = medicationRepository.save(medication).toResponse();
+    auditLog.success("MEDICATION_UPDATED", "MEDICATION", medicationId);
+    return updated;
+  }
 
-	@Transactional
-	MedicationResponse adjustStock(UUID medicationId, StockAdjustmentRequest request) {
-		int delta = request.delta();
-		if (delta == 0) {
-			throw failed("MEDICATION_STOCK_ADJUSTED", medicationId, VALIDATION_ERROR, new RequestValidationException(
-					List.of(new ErrorDetail("delta", "ZERO_DELTA", "Зміна не може дорівнювати нулю"))));
-		}
-		MedicationEntity medication = medicationRepository.findByIdForUpdate(medicationId)
-				.orElseThrow(() -> new ResourceNotFoundException("Medication not found: " + medicationId));
-		long result = (long) medication.quantity() + delta;
-		if (result > MAX_QUANTITY) {
-			throw failed("MEDICATION_STOCK_ADJUSTED", medicationId, VALIDATION_ERROR, new RequestValidationException(
-					List.of(new ErrorDetail("delta", "OUT_OF_RANGE", "Залишок перевищує 1 000 000"))));
-		}
-		if (result < 0) {
-			throw failed("MEDICATION_STOCK_ADJUSTED", medicationId, "NEGATIVE_STOCK",
-					new ConflictException("NEGATIVE_STOCK", "Залишок не може бути від'ємним"));
-		}
-		medication.adjust(delta, OffsetDateTime.now());
-		MedicationResponse adjusted = medicationRepository.save(medication).toResponse();
-		auditLog.success("MEDICATION_STOCK_ADJUSTED", "MEDICATION", medicationId);
-		return adjusted;
-	}
+  /**
+   * Змінює залишок на {@code delta} під блокуванням рядка (REQ-F-042, REQ-F-048).
+   *
+   * @param medicationId ідентифікатор медикаменту
+   * @param request зміна залишку
+   * @return медикамент з новим залишком
+   * @throws RequestValidationException якщо зміна нульова або результат перевищує 1 000 000
+   * @throws ResourceNotFoundException якщо медикаменту немає
+   * @throws ConflictException {@code NEGATIVE_STOCK}, якщо залишок став би від'ємним
+   */
+  @Transactional
+  MedicationResponse adjustStock(UUID medicationId, StockAdjustmentRequest request) {
+    int delta = request.delta();
+    if (delta == 0) {
+      throw failed(
+          "MEDICATION_STOCK_ADJUSTED",
+          medicationId,
+          VALIDATION_ERROR,
+          new RequestValidationException(
+              List.of(new ErrorDetail("delta", "ZERO_DELTA", "Зміна не може дорівнювати нулю"))));
+    }
+    MedicationEntity medication =
+        medicationRepository
+            .findByIdForUpdate(medicationId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Medication not found: " + medicationId));
+    long result = (long) medication.quantity() + delta;
+    if (result > MAX_QUANTITY) {
+      throw failed(
+          "MEDICATION_STOCK_ADJUSTED",
+          medicationId,
+          VALIDATION_ERROR,
+          new RequestValidationException(
+              List.of(new ErrorDetail("delta", "OUT_OF_RANGE", "Залишок перевищує 1 000 000"))));
+    }
+    if (result < 0) {
+      throw failed(
+          "MEDICATION_STOCK_ADJUSTED",
+          medicationId,
+          "NEGATIVE_STOCK",
+          new ConflictException("NEGATIVE_STOCK", "Залишок не може бути від'ємним"));
+    }
+    medication.adjust(delta, OffsetDateTime.now());
+    MedicationResponse adjusted = medicationRepository.save(medication).toResponse();
+    auditLog.success("MEDICATION_STOCK_ADJUSTED", "MEDICATION", medicationId);
+    return adjusted;
+  }
 
-	MedicationPage list(String query, Boolean lowStock, int page, int pageSize) {
-		Specification<MedicationEntity> filter = Specification.unrestricted();
-		if (query != null) {
-			String pattern = "%" + Strings.escapeLike(query.toLowerCase(Locale.ROOT)) + "%";
-			filter = filter.and((root, q, cb) -> cb.like(cb.lower(root.get("name")), pattern, '\\'));
-		}
-		if (lowStock != null) {
-			boolean wanted = lowStock;
-			filter = filter.and((root, q, cb) -> {
-				Predicate low = cb.and(cb.isNotNull(root.get("minThreshold")),
-						cb.lessThan(root.<Integer>get("quantity"), root.<Integer>get("minThreshold")));
-				return wanted ? low : cb.not(low);
-			});
-		}
-		Page<MedicationEntity> medications = medicationRepository.findAll(filter,
-				PageRequest.of(page - 1, pageSize, Sort.by("name")));
-		return new MedicationPage(page, pageSize, medications.getTotalElements(),
-				medications.getContent().stream().map(MedicationEntity::toResponse).toList());
-	}
+  /**
+   * Повертає сторінку каталогу за фільтрами.
+   *
+   * @param query підрядок назви або {@code null}
+   * @param lowStock фільтр за ознакою низького залишку або {@code null}
+   * @param page номер сторінки, починаючи з 1
+   * @param pageSize розмір сторінки
+   * @return сторінка медикаментів, відсортованих за назвою
+   */
+  MedicationPage list(String query, Boolean lowStock, int page, int pageSize) {
+    Specification<MedicationEntity> filter = Specification.unrestricted();
+    if (query != null) {
+      String pattern = "%" + Strings.escapeLike(query.toLowerCase(Locale.ROOT)) + "%";
+      filter = filter.and((root, q, cb) -> cb.like(cb.lower(root.get("name")), pattern, '\\'));
+    }
+    if (lowStock != null) {
+      boolean wanted = lowStock;
+      filter =
+          filter.and((root, q, cb) -> {
+            Predicate low =
+                cb.and(
+                    cb.isNotNull(root.get("minThreshold")),
+                    cb.lessThan(root.<Integer>get("quantity"), root.<Integer>get("minThreshold")));
+            return wanted ? low : cb.not(low);
+          });
+    }
+    Page<MedicationEntity> medications =
+        medicationRepository.findAll(filter, PageRequest.of(page - 1, pageSize, Sort.by("name")));
+    return new MedicationPage(
+        page,
+        pageSize,
+        medications.getTotalElements(),
+        medications.getContent().stream().map(MedicationEntity::toResponse).toList());
+  }
 
-	private MedicationEntity findOrThrow(UUID medicationId) {
-		return medicationRepository.findById(medicationId)
-				.orElseThrow(() -> new ResourceNotFoundException("Medication not found: " + medicationId));
-	}
+  private MedicationEntity findOrThrow(UUID medicationId) {
+    return medicationRepository
+        .findById(medicationId)
+        .orElseThrow(() -> new ResourceNotFoundException("Medication not found: " + medicationId));
+  }
 
-	private static ConflictException nameTaken() {
-		return new ConflictException(NAME_TAKEN, "Медикамент з такою назвою вже існує");
-	}
+  private static ConflictException nameTaken() {
+    return new ConflictException(NAME_TAKEN, "Медикамент з такою назвою вже існує");
+  }
 
-	/** Фіксує відхилену дію в журналі аудиту (AD-22.4) і повертає виняток для передачі далі. */
-	private <E extends RuntimeException> E failed(String event, UUID entityId, String errorCode, E exception) {
-		auditLog.failure(event, "MEDICATION", entityId, errorCode);
-		return exception;
-	}
+  /** Фіксує відхилену дію в журналі аудиту (AD-22.4) і повертає виняток для передачі далі. */
+  private <E extends RuntimeException> E failed(
+      String event, UUID entityId, String errorCode, E exception) {
+    auditLog.failure(event, "MEDICATION", entityId, errorCode);
+    return exception;
+  }
 }

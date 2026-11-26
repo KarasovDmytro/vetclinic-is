@@ -1,73 +1,81 @@
 package ua.vetclinic.api.users;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
+/**
+ * JPA-сутність облікового запису (таблиця {@code users}); лікарі — це користувачі з роллю {@link
+ * Role#VETERINARIAN}.
+ */
 @Entity
 @Table(name = "users")
 class UserEntity {
 
-	@Id
-	private UUID id;
+  @Id private UUID id;
 
-	private String email;
+  private String email;
 
-	private String fullName;
+  private String fullName;
 
-	private String passwordHash;
+  private String passwordHash;
 
-	@Enumerated(EnumType.STRING)
-	private Role role;
+  @Enumerated(EnumType.STRING)
+  private Role role;
 
-	private boolean active;
+  private boolean active;
 
-	private OffsetDateTime createdAt;
+  private OffsetDateTime createdAt;
 
-	protected UserEntity() {
-	}
+  protected UserEntity() {}
 
-	UserEntity(UUID id, String email, String fullName, String passwordHash, Role role, boolean active,
-			OffsetDateTime createdAt) {
-		this.id = id;
-		this.email = email;
-		this.fullName = fullName;
-		this.passwordHash = passwordHash;
-		this.role = role;
-		this.active = active;
-		this.createdAt = createdAt;
-	}
+  UserEntity(
+      UUID id,
+      String email,
+      String fullName,
+      String passwordHash,
+      Role role,
+      boolean active,
+      OffsetDateTime createdAt) {
+    this.id = id;
+    this.email = email;
+    this.fullName = fullName;
+    this.passwordHash = passwordHash;
+    this.role = role;
+    this.active = active;
+    this.createdAt = createdAt;
+  }
 
-	boolean isActive() {
-		return active;
-	}
+  boolean isActive() {
+    return active;
+  }
 
-	boolean isAdmin() {
-		return role == Role.ADMIN;
-	}
+  boolean isAdmin() {
+    return role == Role.ADMIN;
+  }
 
-	boolean isVeterinarian() {
-		return role == Role.VETERINARIAN;
-	}
+  boolean isVeterinarian() {
+    return role == Role.VETERINARIAN;
+  }
 
-	DoctorInfo toDoctorInfo() {
-		return new DoctorInfo(id, fullName, active);
-	}
+  DoctorInfo toDoctorInfo() {
+    return new DoctorInfo(id, fullName, active);
+  }
 
-	void deactivate() {
-		this.active = false;
-	}
+  /** Деактивує користувача: він більше не може увійти, а видані токени перестають діяти. */
+  void deactivate() {
+    this.active = false;
+  }
 
-	UserResponse toResponse() {
-		return new UserResponse(id, email, fullName, role, active, createdAt);
-	}
+  UserResponse toResponse() {
+    return new UserResponse(id, email, fullName, role, active, createdAt);
+  }
 
-	UserAccount toAccount() {
-		return new UserAccount(id, email, fullName, role, active, passwordHash);
-	}
+  UserAccount toAccount() {
+    return new UserAccount(id, email, fullName, role, active, passwordHash);
+  }
 }

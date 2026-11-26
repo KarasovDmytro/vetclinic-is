@@ -1,0 +1,12 @@
+ua.vetclinic.api
+ua.vetclinic.api.appointments
+ua.vetclinic.api.audit
+ua.vetclinic.api.auth
+ua.vetclinic.api.common
+ua.vetclinic.api.medications
+ua.vetclinic.api.notifications
+ua.vetclinic.api.owners
+ua.vetclinic.api.patients
+ua.vetclinic.api.security
+ua.vetclinic.api.users
+ua.vetclinic.api.visits

@@ -23,71 +23,79 @@ import ua.vetclinic.api.LogCapture;
 @ApiIntegrationTest
 class HttpRequestLogTest {
 
-	private final LogCapture httpLog = new LogCapture("HTTP");
+  private final LogCapture httpLog = new LogCapture("HTTP");
 
-	@Autowired
-	private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-	@BeforeEach
-	void startCapture() {
-		httpLog.start();
-	}
+  @BeforeEach
+  void startCapture() {
+    httpLog.start();
+  }
 
-	@AfterEach
-	void stopCapture() {
-		httpLog.stop();
-	}
+  @AfterEach
+  void stopCapture() {
+    httpLog.stop();
+  }
 
-	@Test
-	@DisplayName("AD-21.5: рядок містить метод, шлях, код відповіді, тривалість і requestId, що збігається з X-Request-Id")
-	void request_isLoggedWithMethodPathStatusDurationAndRequestId() throws Exception {
-		// Arrange
-		var request = get("/api/v1/users").with(user("admin").roles("ADMIN"));
+  @Test
+  @DisplayName(
+      "AD-21.5: рядок містить метод, шлях, код відповіді, тривалість і requestId, що збігається з "
+          + "X-Request-Id")
+  void request_isLoggedWithMethodPathStatusDurationAndRequestId() throws Exception {
+    // Arrange
+    var request = get("/api/v1/users").with(user("admin").roles("ADMIN"));
 
-		// Act
-		var result = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
+    // Act
+    var result = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
-		// Assert
-		String requestId = result.getResponse().getHeader("X-Request-Id");
-		assertThat(httpLog.lines(), hasItem(allOf(
-				containsString("method=GET"),
-				containsString("path=/api/v1/users"),
-				containsString("status=200"),
-				containsString("durationMs="),
-				containsString("requestId=" + requestId))));
-	}
+    // Assert
+    String requestId = result.getResponse().getHeader("X-Request-Id");
+    assertThat(
+        httpLog.lines(),
+        hasItem(
+            allOf(
+                containsString("method=GET"),
+                containsString("path=/api/v1/users"),
+                containsString("status=200"),
+                containsString("durationMs="),
+                containsString("requestId=" + requestId))));
+  }
 
-	@Test
-	@DisplayName("AD-21.5: query-параметри (пошуковий рядок з іменами) не потрапляють у журнал")
-	void request_isLoggedWithoutQueryParameters() throws Exception {
-		// Arrange
-		var request = get("/api/v1/users")
-				.param("pageSize", "5")
-				.param("role", "ADMIN")
-				.with(user("admin").roles("ADMIN"));
+  @Test
+  @DisplayName("AD-21.5: query-параметри (пошуковий рядок з іменами) не потрапляють у журнал")
+  void request_isLoggedWithoutQueryParameters() throws Exception {
+    // Arrange
+    var request =
+        get("/api/v1/users")
+            .param("pageSize", "5")
+            .param("role", "ADMIN")
+            .with(user("admin").roles("ADMIN"));
 
-		// Act
-		mockMvc.perform(request).andExpect(status().isOk());
+    // Act
+    mockMvc.perform(request).andExpect(status().isOk());
 
-		// Assert
-		assertThat(httpLog.lines(), hasItem(containsString("path=/api/v1/users status=200")));
-		assertThat(httpLog.lines(), everyItem(not(containsString("pageSize"))));
-		assertThat(httpLog.lines(), everyItem(not(containsString("role=ADMIN"))));
-	}
+    // Assert
+    assertThat(httpLog.lines(), hasItem(containsString("path=/api/v1/users status=200")));
+    assertThat(httpLog.lines(), everyItem(not(containsString("pageSize"))));
+    assertThat(httpLog.lines(), everyItem(not(containsString("role=ADMIN"))));
+  }
 
-	@Test
-	@DisplayName("AD-21.5: запит без автентифікації теж логується — status=401")
-	void unauthenticatedRequest_isLoggedWithStatus401() throws Exception {
-		// Arrange
-		var request = get("/api/v1/users");
+  @Test
+  @DisplayName("AD-21.5: запит без автентифікації теж логується — status=401")
+  void unauthenticatedRequest_isLoggedWithStatus401() throws Exception {
+    // Arrange
+    var request = get("/api/v1/users");
 
-		// Act
-		mockMvc.perform(request).andExpect(status().isUnauthorized());
+    // Act
+    mockMvc.perform(request).andExpect(status().isUnauthorized());
 
-		// Assert
-		assertThat(httpLog.lines(), hasItem(allOf(
-				containsString("method=GET"),
-				containsString("path=/api/v1/users"),
-				containsString("status=401"))));
-	}
+    // Assert
+    assertThat(
+        httpLog.lines(),
+        hasItem(
+            allOf(
+                containsString("method=GET"),
+                containsString("path=/api/v1/users"),
+                containsString("status=401"))));
+  }
 }

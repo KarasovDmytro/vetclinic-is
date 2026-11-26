@@ -1,8 +1,11 @@
 package ua.vetclinic.api.appointments;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 
-import jakarta.validation.constraints.NotNull;
-
-public record UpdateAppointmentRequest(@NotNull OffsetDateTime startsAt) {
-}
+/**
+ * Тіло запиту {@code PATCH /api/v1/appointments/{appointmentId}} (перенесення).
+ *
+ * @param startsAt новий початок слота
+ */
+public record UpdateAppointmentRequest(@NotNull OffsetDateTime startsAt) {}

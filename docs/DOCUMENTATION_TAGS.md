@@ -11,17 +11,17 @@
 
 **Swagger/OpenAPI-анотацій у Java-коді немає.** У `pom.xml` немає залежностей `springdoc`/`io.swagger`, а в коді не трапляються `@Tag`, `@Operation`, `@ApiResponse`, `@Schema`, `@Parameter`. Контракт API ведеться окремим файлом `openapi.yaml`. Javadoc контролерів посилається на нього через `operationId` і REQ-ID, тому дублювати опис в анотаціях не потрібно (розділ 4).
 
-Статистика Javadoc на 2026-11-24 (лише всередині блоків `/** */`):
+Статистика Javadoc на 2026-11-24 (лише всередині блоків `/** */`; `src/main` включає 12 файлів `package-info.java`):
 
 | Тег | `src/main` | `src/test` |
 |---|---:|---:|
-| Javadoc-блоків | 266 | 117 |
+| Javadoc-блоків | 278 | 117 |
 | `@param` | 418 | 45 |
 | `@return` | 98 | 13 |
 | `@throws` | 52 | 13 |
-| `{@code ...}` | 287 | 23 |
+| `{@code ...}` | 309 | 23 |
 | `{@link ...}` | 16 | 3 |
-| `<p>` | 22 | 1 |
+| `<p>` | 23 | 1 |
 
 Теги `@see`, `@deprecated`, `@since`, `@author`, `{@inheritDoc}`, `{@literal}`, `{@linkplain}`, `<ul>` і `<pre>` у проєкті не використовуються.
 

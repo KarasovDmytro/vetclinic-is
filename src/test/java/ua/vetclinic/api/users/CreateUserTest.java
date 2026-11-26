@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ua.vetclinic.api.TestData.LONG_EMAIL;
 import static ua.vetclinic.api.TestData.UUID_PATTERN;
 
 import org.junit.jupiter.api.DisplayName;
@@ -368,6 +369,38 @@ class CreateUserTest {
         .andExpect(status().isUnprocessableContent())
         .andExpect(jsonPath("$.details.length()", equalTo(1)))
         .andExpect(jsonPath("$.details[0].field", equalTo("password")))
+        .andExpect(jsonPath("$.details[0].reason", equalTo("TOO_LONG")));
+  }
+
+  @Test
+  @DisplayName("REQ-F-001: email довший за 254 символи — поле email, причина TOO_LONG (AD-17)")
+  void adminCreatesUserWithTooLongEmail_returnsTooLongReason() throws Exception {
+    // Arrange
+    String requestBody =
+        """
+        {
+          "email": "%s",
+          "fullName": "Довженко Олена Петрівна",
+          "role": "VETERINARIAN",
+          "password": "Vet-Passw0rd-2026"
+        }
+        """
+            .formatted(LONG_EMAIL);
+
+    // Act
+    var response =
+        mockMvc.perform(
+            post("/api/v1/users")
+                .with(user("admin").roles("ADMIN"))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody));
+
+    // Assert
+    response
+        .andExpect(status().isUnprocessableContent())
+        .andExpect(jsonPath("$.details.length()", equalTo(1)))
+        .andExpect(jsonPath("$.details[0].field", equalTo("email")))
         .andExpect(jsonPath("$.details[0].reason", equalTo("TOO_LONG")));
   }
 
